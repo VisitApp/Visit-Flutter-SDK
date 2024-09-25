@@ -27,6 +27,7 @@ dependencies:
 iOS Setup
 To configure the plugin on iOS:
 
+
 ### Key Updates:
 - **WebView Permissions**: Added a section on how to handle WebView access and permission management.
 - **Example Usage**: Provided an example of using the WebView with permission callbacks.

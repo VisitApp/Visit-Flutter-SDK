@@ -1,3 +1,8 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+# Changelog
+
+## [0.0.1] - [2024-09-25]
+- Initial release of the plugin.
+
+
