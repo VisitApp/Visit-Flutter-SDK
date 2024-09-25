@@ -27,7 +27,7 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         body: Center(
           child: VisitFlutterSdk(
-            ssoUrl: 'https://star-health.getvisitapp.net/?code=ufd1WhAz1',
+            ssoUrl: 'https://flutter.dev',
           ),
         ),
       ),
