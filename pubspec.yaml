@@ -1,5 +1,5 @@
 name: visit_flutter_sdk
-description: "A new Flutter plugin project."
+description: "visit_flutter_sdk is a Flutter plugin that integrates web views, URL handling, location services, and permission management. Enhance your mobile app functionality effortlessly with this versatile toolkit!"
 version: 1.0.0
 homepage:
 
