@@ -1,3 +1,7 @@
+## 1.0.2
+
+* Removed webview plugin used in iOS.
+
 ## 1.0.1
 
 * Updated Readme.
