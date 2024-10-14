@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
 
 // First Screen: URL Input and Button to Navigate
 class UrlInputScreen extends StatefulWidget {
-  const UrlInputScreen({Key? key}) : super(key: key);
+  const UrlInputScreen({super.key});
 
   @override
   _UrlInputScreenState createState() => _UrlInputScreenState();
@@ -82,8 +82,7 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
 class VisitFlutterSdkScreen extends StatelessWidget {
   final String ssoUrl;
 
-  const VisitFlutterSdkScreen({Key? key, required this.ssoUrl})
-      : super(key: key);
+  const VisitFlutterSdkScreen({super.key, required this.ssoUrl});
 
   @override
   Widget build(BuildContext context) {

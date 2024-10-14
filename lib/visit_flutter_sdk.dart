@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -19,9 +18,9 @@ class VisitFlutterSdk extends StatelessWidget {
       body: Center(
         child: Platform.isIOS
             ? VisitIosWebView(
-            initialUrl: ssoUrl, isLoggingEnabled: isLoggingEnabled)
+                initialUrl: ssoUrl, isLoggingEnabled: isLoggingEnabled)
             : VisitAndroidWebView(
-            initialUrl: ssoUrl, isLoggingEnabled: isLoggingEnabled),
+                initialUrl: ssoUrl, isLoggingEnabled: isLoggingEnabled),
       ),
     );
   }

@@ -4,8 +4,8 @@ version: 1.0.1
 homepage:
 
 environment:
-  sdk: '>=3.4.3 <4.0.0'
-  flutter: '>=3.3.0'
+  sdk: ">=3.4.3 <4.0.0"
+  flutter: ">=3.3.0"
 
 dependencies:
   flutter:
@@ -16,7 +16,6 @@ dependencies:
   geolocator: ^10.1.0
   flutter_inappwebview: ^5.7.2+3
   plugin_platform_interface: ^2.0.2
-  webview_flutter: ^4.8.0
 
 dev_dependencies:
   flutter_test:

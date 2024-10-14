@@ -4,8 +4,7 @@ class ColoredSafeArea extends StatelessWidget {
   final Widget child;
   final Color color;
 
-  const ColoredSafeArea({Key? key, required this.child, required this.color})
-      : super(key: key);
+  const ColoredSafeArea({super.key, required this.child, required this.color});
 
   @override
   Widget build(BuildContext context) {

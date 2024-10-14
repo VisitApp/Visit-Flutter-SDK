@@ -10,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../colored_safe_area_widget.dart';
 
-
 class VisitAndroidWebView extends StatefulWidget {
   const VisitAndroidWebView({
     super.key,
@@ -64,7 +63,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     ),
                   ),
                   initialUrlRequest:
-                  URLRequest(url: Uri.parse(widget.initialUrl)),
+                      URLRequest(url: Uri.parse(widget.initialUrl)),
                   onWebViewCreated: (InAppWebViewController controller) {
                     _webViewController = controller;
 
@@ -72,12 +71,11 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                       handlerName: 'FlutterWebView',
                       callback: (List<dynamic> args) {
                         // Get message from JavaScript code, which could be the result of some operation.
-
                         try {
                           String jsonString = args[0];
 
                           Map<String, dynamic> callbackResponse =
-                          jsonDecode(jsonString);
+                              jsonDecode(jsonString);
 
                           if (widget.isLoggingEnabled) {
                             log("$TAG: callbackResponse: $callbackResponse");
@@ -121,12 +119,12 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           if (_isLoading)
             const Center(
                 child: Align(
-                  alignment: Alignment(0.0, 0.7),
-                  // Align at 0.8 part of the screen height
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFEC6625),
-                  ),
-                )),
+              alignment: Alignment(0.0, 0.7),
+              // Align at 0.8 part of the screen height
+              child: CircularProgressIndicator(
+                color: Color(0xFFEC6625),
+              ),
+            )),
         ],
       ),
     );
@@ -180,7 +178,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         bool isGPSPermissionEnabled =
-        await Geolocator.isLocationServiceEnabled();
+            await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
           log('$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
@@ -223,7 +221,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Enable'),
+              child: const Text('Enable'),
               onPressed: () {
                 // Open device location settings
                 Geolocator.openLocationSettings();
@@ -231,7 +229,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
               },
             ),
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
