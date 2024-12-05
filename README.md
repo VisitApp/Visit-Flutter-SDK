@@ -1,6 +1,6 @@
 # Visit Flutter Plugin
 
-### Latest Version 1.0.2
+### Latest Version 1.0.3
 
 A Flutter plugin that provides WebView access with permissions for location, file read/write, and more.
 
@@ -24,7 +24,6 @@ dependencies:
 Open the ios/Runner/Info.plist file.
 Add the following permissions:
 
-
 ```
 <key>NSAppTransportSecurity</key>
 <dict>
@@ -42,7 +41,6 @@ Add the following permissions:
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>Your message explaining why the app needs location access.</string>
 ```
-
 
 ### Android Setup
 
@@ -68,4 +66,3 @@ Add the following permissions:
                 android:resource="@xml/provider_paths" />
         </provider>
 ```
-

@@ -89,8 +89,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                             String pdfLink = callbackResponse['link']!;
                             _openPDF(pdfLink);
                           } else if (methodName == "CLOSE_VIEW") {
-                            // Navigator.pop(context);
-                            SystemNavigator.pop();
+                            Navigator.pop(context);
+                            // SystemNavigator.pop();
                           }
                         } catch (e) {
                           log("$TAG: args: $e");
