@@ -37,6 +37,18 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     return true; // Allow the default back action
   }
 
+  Future<void> _makePhoneCall(int phoneNumber) async {
+    final Uri telUri = Uri(scheme: 'tel', path: phoneNumber.toString());
+
+    if (await canLaunchUrl(telUri)) {
+      await launchUrl(telUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not launch the dialer.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ColoredSafeArea(
@@ -91,6 +103,9 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                           } else if (methodName == "CLOSE_VIEW") {
                             Navigator.pop(context);
                             // SystemNavigator.pop();
+                          } else if (methodName == "OPEN_DAILER") {
+                            int? phone = callbackResponse['number'];
+                            _makePhoneCall(phone!);
                           }
                         } catch (e) {
                           log("$TAG: args: $e");

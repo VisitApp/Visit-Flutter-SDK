@@ -37,6 +37,18 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     return true; // Allow the default back action
   }
 
+  Future<void> _makePhoneCall(int phoneNumber) async {
+    final Uri telUri = Uri(scheme: 'tel', path: phoneNumber.toString());
+
+    if (await canLaunchUrl(telUri)) {
+      await launchUrl(telUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not launch the dialer.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ColoredSafeArea(
@@ -44,78 +56,82 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       child: Stack(
         children: [
           WillPopScope(
-              onWillPop: _onWillPop,
-              child: Scaffold(
-                body: InAppWebView(
-                  initialOptions: InAppWebViewGroupOptions(
-                    crossPlatform: InAppWebViewOptions(
-                      javaScriptEnabled: true,
-                      allowFileAccessFromFileURLs: true,
-                    ),
-                    android: AndroidInAppWebViewOptions(
-                      useWideViewPort: true,
-                      builtInZoomControls: true,
-                      geolocationEnabled: true,
-                      allowFileAccess: true,
-                    ),
-                    ios: IOSInAppWebViewOptions(
-                      allowsInlineMediaPlayback: true,
-                    ),
+            onWillPop: _onWillPop,
+            child: Scaffold(
+              body: InAppWebView(
+                initialOptions: InAppWebViewGroupOptions(
+                  crossPlatform: InAppWebViewOptions(
+                    javaScriptEnabled: true,
+                    allowFileAccessFromFileURLs: true,
                   ),
-                  initialUrlRequest:
-                      URLRequest(url: Uri.parse(widget.initialUrl)),
-                  onWebViewCreated: (InAppWebViewController controller) {
-                    _webViewController = controller;
-
-                    _webViewController.addJavaScriptHandler(
-                      handlerName: 'FlutterWebView',
-                      callback: (List<dynamic> args) {
-                        // Get message from JavaScript code, which could be the result of some operation.
-                        try {
-                          String jsonString = args[0];
-
-                          Map<String, dynamic> callbackResponse =
-                              jsonDecode(jsonString);
-
-                          if (widget.isLoggingEnabled) {
-                            log("$TAG: callbackResponse: $callbackResponse");
-                          }
-
-                          String methodName = callbackResponse['name']!;
-
-                          if (methodName == "GET_LOCATION_PERMISSIONS") {
-                            _checkForLocationAndGPSPermission();
-                          } else if (methodName == "DOWNLOAD_PDF") {
-                            String pdfLink = callbackResponse['link']!;
-                            _openPDF(pdfLink);
-                          } else if (methodName == "CLOSE_VIEW") {
-                            Navigator.pop(context);
-                            // SystemNavigator.pop();
-                          }
-                        } catch (e) {
-                          log("$TAG: args: $e");
-                        }
-                      },
-                    );
-                  },
-                  onLoadStart: (controller, url) {
-                    setState(() {
-                      print('Page started loading: $url');
-                      _isLoading = true;
-                    });
-                  },
-                  onLoadStop: (controller, url) {
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  },
-                  androidOnGeolocationPermissionsShowPrompt:
-                      (InAppWebViewController controller, String origin) async {
-                    return GeolocationPermissionShowPromptResponse(
-                        origin: origin, allow: true, retain: true);
-                  },
+                  android: AndroidInAppWebViewOptions(
+                    useWideViewPort: true,
+                    builtInZoomControls: true,
+                    geolocationEnabled: true,
+                    allowFileAccess: true,
+                  ),
+                  ios: IOSInAppWebViewOptions(
+                    allowsInlineMediaPlayback: true,
+                  ),
                 ),
-              )),
+                initialUrlRequest:
+                    URLRequest(url: Uri.parse(widget.initialUrl)),
+                onWebViewCreated: (InAppWebViewController controller) {
+                  _webViewController = controller;
+
+                  _webViewController.addJavaScriptHandler(
+                    handlerName: 'FlutterWebView',
+                    callback: (List<dynamic> args) {
+                      // Get message from JavaScript code, which could be the result of some operation.
+                      try {
+                        String jsonString = args[0];
+
+                        Map<String, dynamic> callbackResponse =
+                            jsonDecode(jsonString);
+
+                        if (widget.isLoggingEnabled) {
+                          log("$TAG: callbackResponse: $callbackResponse");
+                        }
+
+                        String methodName = callbackResponse['name']!;
+
+                        if (methodName == "GET_LOCATION_PERMISSIONS") {
+                          _checkForLocationAndGPSPermission();
+                        } else if (methodName == "DOWNLOAD_PDF") {
+                          String pdfLink = callbackResponse['link']!;
+                          _openPDF(pdfLink);
+                        } else if (methodName == "CLOSE_VIEW") {
+                          Navigator.pop(context);
+                          // SystemNavigator.pop();
+                        } else if (methodName == "OPEN_DAILER") {
+                          int? phone = callbackResponse['number'];
+                          _makePhoneCall(phone!);
+                        }
+                      } catch (e) {
+                        log("$TAG: args: $e");
+                      }
+                    },
+                  );
+                },
+                onLoadStart: (controller, url) {
+                  setState(() {
+                    print('Page started loading: $url');
+                    _isLoading = true;
+                  });
+                },
+                onLoadStop: (controller, url) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                },
+                androidOnGeolocationPermissionsShowPrompt:
+                    (InAppWebViewController controller, String origin) async {
+                  return GeolocationPermissionShowPromptResponse(
+                      origin: origin, allow: true, retain: true);
+                },
+              ),
+            ),
+          ),
           if (_isLoading)
             const Center(
                 child: Align(
