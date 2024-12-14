@@ -1,4 +1,4 @@
-## 1.0.4
+## 1.0.5
 
 - Added functionality to open dialer directly from sdk.
 
