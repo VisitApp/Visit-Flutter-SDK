@@ -1,5 +1,9 @@
 ## 1.0.3
 
+- Added functionality to open dialer directly from sdk.
+
+## 1.0.3
+
 - Bug fix app terminate while go back.
 
 ## 1.0.2
