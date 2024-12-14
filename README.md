@@ -40,6 +40,11 @@ Add the following permissions:
 <string>This app requires access to your location even when not in use.</string>
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>Your message explaining why the app needs location access.</string>
+
+<key>LSApplicationQueriesSchemes</key>
+<array>
+	<string>tel</string>
+</array>
 ```
 
 ### Android Setup
@@ -51,6 +56,15 @@ Add the following permissions:
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+    </queries>
 ```
 
 2. Add this File Provider if already not present:
