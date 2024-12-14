@@ -3,13 +3,24 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.CALL_PHONE"/>
     <uses-permission android:name="android.permission.INTERNET" />
+
+
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+    </queries>
+
 
     <application
         android:label="visit_flutter_sdk_example"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+
 
         <provider
             android:name="com.pichillilorenzo.flutter_inappwebview.InAppWebViewFileProvider"
@@ -42,7 +53,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
-                <data android:scheme="tel" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
