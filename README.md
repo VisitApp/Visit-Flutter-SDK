@@ -16,7 +16,7 @@ Add the following dependency in your `pubspec.yaml` file:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_plugin_name: ^1.0.1
+  visit_flutter_sdk: ^1.0.5
 ```
 
 ### iOS Setup
