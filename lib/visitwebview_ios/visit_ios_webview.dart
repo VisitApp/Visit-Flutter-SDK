@@ -58,11 +58,13 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
           WillPopScope(
               onWillPop: _onWillPop,
               child: Scaffold(
+                backgroundColor: Colors.white,
                 body: InAppWebView(
                   initialOptions: InAppWebViewGroupOptions(
                     crossPlatform: InAppWebViewOptions(
                       javaScriptEnabled: true,
                       allowFileAccessFromFileURLs: true,
+                      transparentBackground: true,
                     ),
                     android: AndroidInAppWebViewOptions(
                       useWideViewPort: true,
