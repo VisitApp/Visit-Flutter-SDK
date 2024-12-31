@@ -1,3 +1,7 @@
+## 1.0.6
+
+- Removed native progress dialog.
+
 ## 1.0.5
 
 - Added functionality to open dialer directly from sdk.
