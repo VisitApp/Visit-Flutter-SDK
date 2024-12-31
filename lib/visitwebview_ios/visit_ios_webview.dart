@@ -27,7 +27,7 @@ class VisitIosWebView extends StatefulWidget {
 class _VisitIosWebViewState extends State<VisitIosWebView> {
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
@@ -116,12 +116,12 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                   onLoadStart: (controller, url) {
                     setState(() {
                       print('Page started loading: $url');
-                      _isLoading = true;
+                      // _isLoading = true;
                     });
                   },
                   onLoadStop: (controller, url) {
                     setState(() {
-                      _isLoading = false;
+                      // _isLoading = false;
                     });
                   },
                   androidOnGeolocationPermissionsShowPrompt:

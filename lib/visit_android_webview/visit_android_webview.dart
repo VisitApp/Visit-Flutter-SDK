@@ -27,7 +27,7 @@ class VisitAndroidWebView extends StatefulWidget {
 class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
@@ -116,12 +116,12 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                 onLoadStart: (controller, url) {
                   setState(() {
                     print('Page started loading: $url');
-                    _isLoading = true;
+                    // _isLoading = true;
                   });
                 },
                 onLoadStop: (controller, url) {
                   setState(() {
-                    _isLoading = false;
+                    // _isLoading = false;
                   });
                 },
                 androidOnGeolocationPermissionsShowPrompt:
