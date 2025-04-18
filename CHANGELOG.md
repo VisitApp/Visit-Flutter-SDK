@@ -1,3 +1,7 @@
+## 1.0.7
+
+- Changed dialog design
+
 ## 1.0.6
 
 - Removed native progress dialog.
