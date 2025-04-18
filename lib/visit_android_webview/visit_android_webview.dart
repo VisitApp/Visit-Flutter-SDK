@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../colored_safe_area_widget.dart';
+import '../alert_dialog.dart';
 
 class VisitAndroidWebView extends StatefulWidget {
   const VisitAndroidWebView({
@@ -264,29 +265,6 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   }
 
   void _showAndroidPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Location Permission Required'),
-          content: const Text('This app needs access to your location.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                openAppSettings();
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
-        );
-      },
-    );
+    showPermissionDialog(context);
   }
 }
