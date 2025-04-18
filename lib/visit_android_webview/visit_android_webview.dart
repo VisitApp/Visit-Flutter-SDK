@@ -7,8 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../colored_safe_area_widget.dart';
 import '../alert_dialog.dart';
+import '../colored_safe_area_widget.dart';
 
 class VisitAndroidWebView extends StatefulWidget {
   const VisitAndroidWebView({
@@ -77,7 +77,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                   ),
                 ),
                 initialUrlRequest:
-                URLRequest(url: Uri.parse(widget.initialUrl)),
+                    URLRequest(url: Uri.parse(widget.initialUrl)),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
 
@@ -89,7 +89,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         String jsonString = args[0];
 
                         Map<String, dynamic> callbackResponse =
-                        jsonDecode(jsonString);
+                            jsonDecode(jsonString);
 
                         if (widget.isLoggingEnabled) {
                           log("$TAG: callbackResponse: $callbackResponse");
@@ -137,12 +137,12 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           if (_isLoading)
             const Center(
                 child: Align(
-                  alignment: Alignment(0.0, 0.7),
-                  // Align at 0.8 part of the screen height
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFEC6625),
-                  ),
-                )),
+              alignment: Alignment(0.0, 0.7),
+              // Align at 0.8 part of the screen height
+              child: CircularProgressIndicator(
+                color: Color(0xFFEC6625),
+              ),
+            )),
         ],
       ),
     );
@@ -170,21 +170,18 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       if (widget.isLoggingEnabled) {
-        log(
-            '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+        log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
       }
 
       bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (widget.isLoggingEnabled) {
-        log(
-            '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
+        log('$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
       }
 
       if (isGPSPermissionEnabled) {
         if (widget.isLoggingEnabled) {
-          log(
-              '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
+          log('$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
         }
 
         String jsCode = "window.checkTheGpsPermission(true)";
@@ -199,17 +196,15 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         bool isGPSPermissionEnabled =
-        await Geolocator.isLocationServiceEnabled();
+            await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
-          log(
-              '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
+          log('$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
         }
 
         if (isGPSPermissionEnabled) {
           if (widget.isLoggingEnabled) {
-            log(
-                '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
+            log('$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
           }
 
           String jsCode = "window.checkTheGpsPermission(true)";
@@ -220,8 +215,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         }
       } else {
         if (widget.isLoggingEnabled) {
-          log(
-              '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+          log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
         }
 
         _showAndroidPermissionDialog();
@@ -230,41 +224,24 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   }
 
   _showEnableGPSDialog() async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // User must tap the button
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Enable GPS'),
-          content: const SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text('Please enable GPS to continue using this feature.'),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Enable'),
-              onPressed: () {
-                // Open device location settings
-                Geolocator.openLocationSettings();
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
+    return showPermissionDialog(
+        context, 'Please enable GPS to continue using this feature.',
+        onPositiveButtonPress: () {
+      Navigator.of(context).pop();
+      Geolocator.openLocationSettings();
+    }, onNegativeButtonPress: () {
+      Navigator.of(context).pop();
+    });
   }
 
   void _showAndroidPermissionDialog() {
-    showPermissionDialog(context);
+    showPermissionDialog(
+        context, 'Please go to setting and turn on the permission',
+        onPositiveButtonPress: () {
+      Navigator.of(context).pop();
+      openAppSettings();
+    }, onNegativeButtonPress: () {
+      Navigator.pop(context);
+    });
   }
 }

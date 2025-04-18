@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:permission_handler/permission_handler.dart';
 
-void showPermissionDialog(BuildContext context) {
+void showPermissionDialog(BuildContext context, String titleText,
+    {required VoidCallback onPositiveButtonPress,
+    required VoidCallback onNegativeButtonPress}) {
   showDialog(
     context: context,
     builder: (_) => AlertDialog(
@@ -10,7 +11,7 @@ void showPermissionDialog(BuildContext context) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: const EdgeInsets.only(top: 20, left: 20, right: 20),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      actionsPadding: const EdgeInsets.only(bottom: 10),
+      actionsPadding: const EdgeInsets.only(bottom: 2),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -21,7 +22,8 @@ void showPermissionDialog(BuildContext context) {
                 package: 'visit_flutter_sdk',
                 width: 27,
                 height: 27,
-                placeholderBuilder: (context) => CircularProgressIndicator(),
+                placeholderBuilder: (context) =>
+                    const CircularProgressIndicator(),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -36,9 +38,9 @@ void showPermissionDialog(BuildContext context) {
             ],
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Please go to setting and turn on the permission',
-            style: TextStyle(
+          Text(
+            titleText,
+            style: const TextStyle(
                 fontFamily: 'Mulish',
                 fontWeight: FontWeight.w400,
                 fontSize: 14,
@@ -59,8 +61,7 @@ void showPermissionDialog(BuildContext context) {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(8),
                   onTap: () {
-                    Navigator.of(context).pop();
-                    openAppSettings();
+                    onPositiveButtonPress();
                   },
                   child: Container(
                     width: double.infinity,
@@ -82,9 +83,9 @@ void showPermissionDialog(BuildContext context) {
               ),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => onNegativeButtonPress(),
               style: ButtonStyle(
-                overlayColor: MaterialStateProperty.all(Colors.transparent),
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
                 splashFactory: NoSplash.splashFactory,
               ),
               child: const Text(
