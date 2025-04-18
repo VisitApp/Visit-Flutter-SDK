@@ -1,3 +1,7 @@
+## 1.0.8
+
+- Changed message 
+
 ## 1.0.7
 
 - Changed dialog design
