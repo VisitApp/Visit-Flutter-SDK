@@ -225,7 +225,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   _showEnableGPSDialog() async {
     return showPermissionDialog(
-        context, 'Please enable GPS to continue using this feature.',
+        context, 'Please go to settings and turn on GPS',
         onPositiveButtonPress: () {
       Navigator.of(context).pop();
       Geolocator.openLocationSettings();

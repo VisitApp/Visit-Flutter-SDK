@@ -22,10 +22,10 @@ dependencies:
   cupertino_icons: ^1.0.6
   url_launcher: ^6.3.1
 
-  ##from pub.dev
-#  visit_flutter_sdk: ^1.0.4
+    ##from pub.dev
+    #  visit_flutter_sdk: ^1.0.7
 
-  ##from parent folder.
+    ##from parent folder.
   visit_flutter_sdk:
     # When depending on this package from a real application you should use:
     #   visit_flutter_sdk: ^x.y.z

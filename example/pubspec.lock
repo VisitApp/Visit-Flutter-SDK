@@ -535,10 +535,11 @@ packages:
   visit_flutter_sdk:
     dependency: "direct main"
     description:
-      path: ".."
-      relative: true
-    source: path
-    version: "1.0.6"
+      name: visit_flutter_sdk
+      sha256: "103ade07ddb8805df33994a47d6b0de5cc1e2f3c380f4bc76b76f5a5754c85da"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.7"
   vm_service:
     dependency: transitive
     description:
