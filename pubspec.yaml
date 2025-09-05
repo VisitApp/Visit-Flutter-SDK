@@ -14,7 +14,7 @@ dependencies:
   url_launcher: ^6.1.5
   permission_handler: ^10.2.0
   geolocator: ^10.1.0
-  flutter_inappwebview: ^5.7.2+3
+  flutter_inappwebview: 5.7.2+3
   plugin_platform_interface: ^2.0.2
   flutter_svg: ^2.0.17
 
