@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -49,6 +48,40 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     }
   }
 
+  Future<void> _checkAndRequestCameraAndMicPermissions() async {
+    if (widget.isLoggingEnabled) {
+      log('$TAG: _checkAndRequestCameraAndMicPermissions: called');
+    }
+
+    // Current status
+    PermissionStatus camStatus = await Permission.camera.status;
+    PermissionStatus micStatus = await Permission.microphone.status;
+
+    bool granted = camStatus.isGranted && micStatus.isGranted;
+
+    // Request if not both granted
+    if (!granted) {
+      final results =
+          await [Permission.camera, Permission.microphone].request();
+      camStatus = results[Permission.camera] ?? camStatus;
+      micStatus = results[Permission.microphone] ?? micStatus;
+      granted = camStatus.isGranted && micStatus.isGranted;
+    }
+
+    // Notify the web page via JS (mirrors your GPS callback style)
+    final js =
+        'window.checkCameraAndMicPermission && window.checkCameraAndMicPermission(' +
+            (granted ? 'true' : 'false') +
+            ')';
+    _webViewController.evaluateJavascript(source: js);
+
+    // If permanently denied, guide user to app settings (Android)
+    if (!granted &&
+        (camStatus.isPermanentlyDenied || micStatus.isPermanentlyDenied)) {
+      _showAndroidPermissionDialog();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ColoredSafeArea(
@@ -80,11 +113,9 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                       URLRequest(url: Uri.parse(widget.initialUrl)),
                   onWebViewCreated: (InAppWebViewController controller) {
                     _webViewController = controller;
-
                     _webViewController.addJavaScriptHandler(
                       handlerName: 'FlutterWebView',
                       callback: (List<dynamic> args) {
-                        // Get message from JavaScript code, which could be the result of some operation.
                         try {
                           String jsonString = args[0];
 
@@ -108,6 +139,9 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                           } else if (methodName == "OPEN_DAILER") {
                             int? phone = callbackResponse['number'];
                             _makePhoneCall(phone!);
+                          } else if (methodName ==
+                              "GET_CAMERA_AND_MICROPHONE_PERMISSIONS") {
+                            _checkAndRequestCameraAndMicPermissions();
                           }
                         } catch (e) {
                           log("$TAG: args: $e");
@@ -125,6 +159,9 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                     setState(() {
                       // _isLoading = false;
                     });
+                  },
+                  onConsoleMessage: (controller, consoleMessage) {
+                    log("$TAG: [CONSOLE][${consoleMessage.messageLevel}] ${consoleMessage.message}");
                   },
                   androidOnGeolocationPermissionsShowPrompt:
                       (InAppWebViewController controller, String origin) async {
