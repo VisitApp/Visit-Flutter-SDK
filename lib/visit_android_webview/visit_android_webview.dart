@@ -108,6 +108,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         } else if (methodName == "OPEN_DAILER") {
                           int? phone = callbackResponse['number'];
                           _makePhoneCall(phone!);
+                        } else if (methodName ==
+                            "GET_CAMERA_AND_MICROPHONE_PERMISSIONS") {
+                          _checkAndRequestCameraAndMicPermissions();
                         }
                       } catch (e) {
                         log("$TAG: args: $e");
@@ -121,15 +124,116 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     // _isLoading = true;
                   });
                 },
-                onLoadStop: (controller, url) {
+                onLoadStop: (controller, url) async {
                   setState(() {
                     // _isLoading = false;
                   });
+
+                  if (!mounted) return;
+                  if (widget.isLoggingEnabled) {
+                    // Inject diagnostics to help debug getUserMedia
+                    const js = r'''
+                      (async () => {
+                        const tag = '[gUM-debug]';
+                        try {
+                          console.log(tag, 'location', location.href);
+                          if (navigator.permissions && navigator.permissions.query) {
+                            try {
+                              const cam = await navigator.permissions.query({ name: 'camera' }).catch(()=>({state:'unknown'}));
+                              const mic = await navigator.permissions.query({ name: 'microphone' }).catch(()=>({state:'unknown'}));
+                              console.log(tag, 'permissions camera=', cam.state, 'microphone=', mic.state);
+                            } catch (e) { console.warn(tag, 'permissions query error', e && e.message); }
+                          }
+                          if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                            const devices = await navigator.mediaDevices.enumerateDevices();
+                            console.log(tag, 'devices', devices.map(d => `${d.kind}:${d.label||'(label hidden)'}`));
+                          } else {
+                            console.warn(tag, 'navigator.mediaDevices.enumerateDevices not available');
+                          }
+                        } catch (e) {
+                          console.error(tag, 'probe failed', e && (e.name+': '+e.message));
+                        }
+                      })();
+                    ''';
+                    await _webViewController.evaluateJavascript(source: js);
+                  }
+                },
+                onConsoleMessage: (controller, consoleMessage) {
+                  log("$TAG: [CONSOLE][${consoleMessage.messageLevel}] ${consoleMessage.message}");
                 },
                 androidOnGeolocationPermissionsShowPrompt:
                     (InAppWebViewController controller, String origin) async {
                   return GeolocationPermissionShowPromptResponse(
                       origin: origin, allow: true, retain: true);
+                },
+                androidOnPermissionRequest:
+                    (controller, origin, resources) async {
+                  // Log origin and resources requested by the page
+                  if (widget.isLoggingEnabled) {
+                    log("$TAG: androidOnPermissionRequest origin=$origin resources=$resources");
+                  }
+
+                  // 1) Check current runtime permission status
+                  PermissionStatus camStatus = await Permission.camera.status;
+                  PermissionStatus micStatus =
+                      await Permission.microphone.status;
+
+                  if (widget.isLoggingEnabled) {
+                    log("$TAG: runtime status BEFORE request -> camera=${camStatus}, mic=${micStatus}");
+                  }
+
+                  bool granted = camStatus.isGranted && micStatus.isGranted;
+
+                  // 2) Request runtime permissions if needed
+                  if (!granted) {
+                    try {
+                      final results = await [
+                        Permission.camera,
+                        Permission.microphone
+                      ].request();
+
+                      if (widget.isLoggingEnabled) {
+                        log("$TAG: runtime request results -> ${results.map((k, v) => MapEntry(k.value, v)).toString()}");
+                      }
+
+                      camStatus = results[Permission.camera] ?? camStatus;
+                      micStatus = results[Permission.microphone] ?? micStatus;
+                    } catch (e) {
+                      if (widget.isLoggingEnabled) {
+                        log("$TAG: runtime permission request threw: $e");
+                      }
+                    }
+                    if (widget.isLoggingEnabled) {
+                      log("$TAG: runtime status AFTER request -> camera=${camStatus}, mic=${micStatus}");
+                    }
+
+                    granted = camStatus.isGranted && micStatus.isGranted;
+                  }
+
+                  // 3) Decide WebView grant/deny and log the decision
+                  if (!granted) {
+                    if (widget.isLoggingEnabled) {
+                      log("$TAG: WebView permission DECISION = DENY (runtime not fully granted)");
+                    }
+
+                    return PermissionRequestResponse(
+                      resources: resources,
+                      action: PermissionRequestResponseAction.DENY,
+                    );
+                  }
+
+                  // Only grant what the page asked for; also log exactly what we're granting
+                  final toGrant =
+                      resources.map((r) => r).toList(growable: false);
+
+                  if (widget.isLoggingEnabled) {
+                    log("$TAG: WebView permission DECISION = GRANT -> $toGrant");
+                  }
+
+                  return PermissionRequestResponse(
+                    resources: toGrant,
+                    action: PermissionRequestResponseAction.GRANT,
+                  );
                 },
               ),
             ),
@@ -220,6 +324,40 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
         _showAndroidPermissionDialog();
       }
+    }
+  }
+
+  Future<void> _checkAndRequestCameraAndMicPermissions() async {
+    if (widget.isLoggingEnabled) {
+      log('$TAG: _checkAndRequestCameraAndMicPermissions: called');
+    }
+
+    // Current status
+    PermissionStatus camStatus = await Permission.camera.status;
+    PermissionStatus micStatus = await Permission.microphone.status;
+
+    bool granted = camStatus.isGranted && micStatus.isGranted;
+
+    // Request if not both granted
+    if (!granted) {
+      final results =
+          await [Permission.camera, Permission.microphone].request();
+      camStatus = results[Permission.camera] ?? camStatus;
+      micStatus = results[Permission.microphone] ?? micStatus;
+      granted = camStatus.isGranted && micStatus.isGranted;
+    }
+
+    // Notify the web page via JS (mirrors your GPS callback style)
+    final js =
+        'window.checkCameraAndMicPermission && window.checkCameraAndMicPermission(' +
+            (granted ? 'true' : 'false') +
+            ')';
+    _webViewController.evaluateJavascript(source: js);
+
+    // If permanently denied, guide user to app settings (Android)
+    if (!granted &&
+        (camStatus.isPermanentlyDenied || micStatus.isPermanentlyDenied)) {
+      _showAndroidPermissionDialog();
     }
   }
 
