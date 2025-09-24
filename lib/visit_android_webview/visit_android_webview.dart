@@ -352,6 +352,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         'window.checkCameraAndMicPermission && window.checkCameraAndMicPermission(' +
             (granted ? 'true' : 'false') +
             ')';
+
+    if (widget.isLoggingEnabled) {
+      log('$TAG: js: '+js);
+    }
     _webViewController.evaluateJavascript(source: js);
 
     // If permanently denied, guide user to app settings (Android)
