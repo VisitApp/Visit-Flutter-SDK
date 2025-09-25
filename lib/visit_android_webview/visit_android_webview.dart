@@ -65,6 +65,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     javaScriptEnabled: true,
                     allowFileAccessFromFileURLs: true,
                     transparentBackground: true,
+                    mediaPlaybackRequiresUserGesture: false,
                   ),
                   android: AndroidInAppWebViewOptions(
                     useWideViewPort: true,
