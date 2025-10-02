@@ -160,7 +160,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                   }
                 },
                 onConsoleMessage: (controller, consoleMessage) {
-                  log("$TAG: [CONSOLE][${consoleMessage.messageLevel}] ${consoleMessage.message}");
+                  // log("$TAG: [CONSOLE][${consoleMessage.messageLevel}] ${consoleMessage.message}");
                 },
                 androidOnGeolocationPermissionsShowPrompt:
                     (InAppWebViewController controller, String origin) async {
