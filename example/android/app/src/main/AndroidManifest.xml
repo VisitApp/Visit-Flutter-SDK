@@ -21,8 +21,9 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <provider android:name="com.pichillilorenzo.flutter_inappwebview_android.InAppWebViewFileProvider"
-            android:authorities="${applicationId}.flutter_inappwebview.fileprovider"
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.flutter_inappwebview_android.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
