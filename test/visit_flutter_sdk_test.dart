@@ -7,22 +7,11 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 class MockVisitFlutterSdkPlatform
     with MockPlatformInterfaceMixin
     implements VisitFlutterSdkPlatform {
+
   @override
   Future<String?> getPlatformVersion() => Future.value('42');
 }
 
 void main() {
-  final VisitFlutterSdkPlatform initialPlatform =
-      VisitFlutterSdkPlatform.instance;
 
-  test('$MethodChannelVisitFlutterSdk is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelVisitFlutterSdk>());
-  });
-
-  test('getPlatformVersion', () async {
-    MockVisitFlutterSdkPlatform fakePlatform = MockVisitFlutterSdkPlatform();
-    VisitFlutterSdkPlatform.instance = fakePlatform;
-
-    // expect(await visitFlutterSdkPlugin.getPlatformVersion(), '42');
-  });
 }

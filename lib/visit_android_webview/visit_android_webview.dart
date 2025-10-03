@@ -51,6 +51,19 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   @override
   Widget build(BuildContext context) {
+
+    InAppWebViewSettings settings = InAppWebViewSettings(
+      javaScriptEnabled: true,
+      allowFileAccessFromFileURLs: true,
+      transparentBackground: true,
+      useWideViewPort: true,
+      builtInZoomControls: true,
+      geolocationEnabled: true,
+      allowFileAccess: true,
+        allowsInlineMediaPlayback:true,
+    );
+
+
     return ColoredSafeArea(
       color: Colors.white,
       child: Stack(
@@ -60,24 +73,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
             child: Scaffold(
               backgroundColor: Colors.white,
               body: InAppWebView(
-                initialOptions: InAppWebViewGroupOptions(
-                  crossPlatform: InAppWebViewOptions(
-                    javaScriptEnabled: true,
-                    allowFileAccessFromFileURLs: true,
-                    transparentBackground: true,
-                  ),
-                  android: AndroidInAppWebViewOptions(
-                    useWideViewPort: true,
-                    builtInZoomControls: true,
-                    geolocationEnabled: true,
-                    allowFileAccess: true,
-                  ),
-                  ios: IOSInAppWebViewOptions(
-                    allowsInlineMediaPlayback: true,
-                  ),
-                ),
-                initialUrlRequest:
-                    URLRequest(url: Uri.parse(widget.initialUrl)),
+                initialSettings: settings,
+                initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
 
@@ -89,7 +86,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         String jsonString = args[0];
 
                         Map<String, dynamic> callbackResponse =
-                            jsonDecode(jsonString);
+                        jsonDecode(jsonString);
 
                         if (widget.isLoggingEnabled) {
                           log("$TAG: callbackResponse: $callbackResponse");
@@ -126,10 +123,24 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     // _isLoading = false;
                   });
                 },
-                androidOnGeolocationPermissionsShowPrompt:
-                    (InAppWebViewController controller, String origin) async {
+                onGeolocationPermissionsShowPrompt: (controller, origin) async {
+                  // Ask runtime permission first (using permission_handler)
+                  var status = await Permission.locationWhenInUse.status;
+                  if (!status.isGranted) {
+                    status = await Permission.locationWhenInUse.request();
+                  }
+
+                  final allow = status.isGranted;
+                  // If permanently denied, consider guiding the user to settings:
+                  if (status.isPermanentlyDenied) {
+                    // await openAppSettings(); // optional: prompt user to open settings
+                  }
+
                   return GeolocationPermissionShowPromptResponse(
-                      origin: origin, allow: true, retain: true);
+                    origin: origin,
+                    allow: allow,
+                    retain: true, // remember this decision for this origin
+                  );
                 },
               ),
             ),
@@ -137,12 +148,12 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           if (_isLoading)
             const Center(
                 child: Align(
-              alignment: Alignment(0.0, 0.7),
-              // Align at 0.8 part of the screen height
-              child: CircularProgressIndicator(
-                color: Color(0xFFEC6625),
-              ),
-            )),
+                  alignment: Alignment(0.0, 0.7),
+                  // Align at 0.8 part of the screen height
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFEC6625),
+                  ),
+                )),
         ],
       ),
     );
@@ -170,18 +181,21 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       if (widget.isLoggingEnabled) {
-        log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+        log(
+            '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
       }
 
       bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (widget.isLoggingEnabled) {
-        log('$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
+        log(
+            '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
       }
 
       if (isGPSPermissionEnabled) {
         if (widget.isLoggingEnabled) {
-          log('$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
+          log(
+              '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
         }
 
         String jsCode = "window.checkTheGpsPermission(true)";
@@ -196,15 +210,17 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         bool isGPSPermissionEnabled =
-            await Geolocator.isLocationServiceEnabled();
+        await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
-          log('$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
+          log(
+              '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
         }
 
         if (isGPSPermissionEnabled) {
           if (widget.isLoggingEnabled) {
-            log('$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
+            log(
+                '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
           }
 
           String jsCode = "window.checkTheGpsPermission(true)";
@@ -215,7 +231,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         }
       } else {
         if (widget.isLoggingEnabled) {
-          log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+          log(
+              '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
         }
 
         _showAndroidPermissionDialog();
@@ -227,9 +244,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     return showPermissionDialog(
         context, 'Please go to settings and turn on GPS',
         onPositiveButtonPress: () {
-      Navigator.of(context).pop();
-      Geolocator.openLocationSettings();
-    }, onNegativeButtonPress: () {
+          Navigator.of(context).pop();
+          Geolocator.openLocationSettings();
+        }, onNegativeButtonPress: () {
       Navigator.of(context).pop();
     });
   }
@@ -238,9 +255,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     showPermissionDialog(
         context, 'Please go to setting and turn on the permission',
         onPositiveButtonPress: () {
-      Navigator.of(context).pop();
-      openAppSettings();
-    }, onNegativeButtonPress: () {
+          Navigator.of(context).pop();
+          openAppSettings();
+        }, onNegativeButtonPress: () {
       Navigator.pop(context);
     });
   }

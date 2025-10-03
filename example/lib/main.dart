@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/services.dart';
 import 'package:visit_flutter_sdk/visit_flutter_sdk.dart';
 
 void main() {
@@ -10,9 +13,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: UrlInputScreen(),
-    );
+    return const MaterialApp(home: UrlInputScreen());
   }
 }
 
@@ -30,9 +31,7 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Enter SSO URL"),
-      ),
+      appBar: AppBar(title: const Text("Enter SSO URL")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -60,9 +59,7 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
                 } else {
                   // Show a warning if the URL is empty
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a URL'),
-                    ),
+                    const SnackBar(content: Text('Please enter a URL')),
                   );
                 }
               },
@@ -84,10 +81,7 @@ class VisitFlutterSdkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: VisitFlutterSdk(
-        ssoUrl: ssoUrl,
-        isLoggingEnabled: true,
-      ),
+      body: VisitFlutterSdk(ssoUrl: ssoUrl, isLoggingEnabled: true),
     );
   }
 }

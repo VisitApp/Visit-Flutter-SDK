@@ -1,27 +1,26 @@
 name: visit_flutter_sdk
-description: "visit_flutter_sdk is a Flutter plugin that integrates web views, URL handling, location services, and permission management. Enhance your mobile app functionality effortlessly with this versatile toolkit!"
-version: 1.0.8
+description: "A new Flutter plugin project."
+version: 0.0.1
 homepage:
 
 environment:
-  sdk: ">=3.4.3 <4.0.0"
-  flutter: ">=3.3.0"
+  sdk: ^3.8.1
+  flutter: '>=3.3.0'
 
 dependencies:
   flutter:
     sdk: flutter
-
-  url_launcher: ^6.1.5
-  permission_handler: ^10.2.0
-  geolocator: ^10.1.0
-  flutter_inappwebview: ^5.7.2+3
+  flutter_inappwebview: ^6.1.4
+  flutter_svg: ^2.2.1
+  geolocator: ^10.1.1
+  permission_handler: ^12.0.1
   plugin_platform_interface: ^2.0.2
-  flutter_svg: ^2.0.17
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -46,6 +45,7 @@ flutter:
       ios:
         pluginClass: VisitFlutterSdkPlugin
 
+
   # To add assets to your plugin package, add an assets section, like this:
   assets:
     - assets/images/disclaimer_icon.svg
@@ -62,7 +62,7 @@ flutter:
         - asset: assets/fonts/mulish_semibold.ttf
           weight: 600
           style: normal
-
+  #         weight: 700
   #
   # For details regarding fonts in packages, see
-  # https://flutter.dev/custom-fonts/#from-packages
+  # https://flutter.dev/to/font-from-package

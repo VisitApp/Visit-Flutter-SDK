@@ -29,6 +29,19 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
   String TAG = "mytag";
   bool _isLoading = false;
 
+
+  InAppWebViewSettings settings = InAppWebViewSettings(
+    javaScriptEnabled: true,
+    allowFileAccessFromFileURLs: true,
+    transparentBackground: true,
+    useWideViewPort: true,
+    builtInZoomControls: true,
+    geolocationEnabled: true,
+    allowFileAccess: true,
+    allowsInlineMediaPlayback:true,
+  );
+
+
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
       _webViewController.goBack();
@@ -60,24 +73,8 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
               child: Scaffold(
                 backgroundColor: Colors.white,
                 body: InAppWebView(
-                  initialOptions: InAppWebViewGroupOptions(
-                    crossPlatform: InAppWebViewOptions(
-                      javaScriptEnabled: true,
-                      allowFileAccessFromFileURLs: true,
-                      transparentBackground: true,
-                    ),
-                    android: AndroidInAppWebViewOptions(
-                      useWideViewPort: true,
-                      builtInZoomControls: true,
-                      geolocationEnabled: true,
-                      allowFileAccess: true,
-                    ),
-                    ios: IOSInAppWebViewOptions(
-                      allowsInlineMediaPlayback: true,
-                    ),
-                  ),
-                  initialUrlRequest:
-                      URLRequest(url: Uri.parse(widget.initialUrl)),
+                  initialSettings: settings,
+                  initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
                   onWebViewCreated: (InAppWebViewController controller) {
                     _webViewController = controller;
 
@@ -126,10 +123,24 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                       // _isLoading = false;
                     });
                   },
-                  androidOnGeolocationPermissionsShowPrompt:
-                      (InAppWebViewController controller, String origin) async {
+                  onGeolocationPermissionsShowPrompt: (controller, origin) async {
+                    // Ask runtime permission first (using permission_handler)
+                    var status = await Permission.locationWhenInUse.status;
+                    if (!status.isGranted) {
+                      status = await Permission.locationWhenInUse.request();
+                    }
+
+                    final allow = status.isGranted;
+                    // If permanently denied, consider guiding the user to settings:
+                    if (status.isPermanentlyDenied) {
+                      // await openAppSettings(); // optional: prompt user to open settings
+                    }
+
                     return GeolocationPermissionShowPromptResponse(
-                        origin: origin, allow: true, retain: true);
+                      origin: origin,
+                      allow: allow,
+                      retain: true, // remember this decision for this origin
+                    );
                   },
                 ),
               )),

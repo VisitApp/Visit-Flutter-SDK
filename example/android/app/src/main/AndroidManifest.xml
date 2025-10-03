@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -20,11 +21,9 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-
-
         <provider
-            android:name="com.pichillilorenzo.flutter_inappwebview.InAppWebViewFileProvider"
-            android:authorities="${applicationId}.flutter_inappwebview.fileprovider"
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.flutter_inappwebview_android.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
