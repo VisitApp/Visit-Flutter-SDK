@@ -13,17 +13,5 @@ class MockVisitFlutterSdkPlatform
 }
 
 void main() {
-  final VisitFlutterSdkPlatform initialPlatform = VisitFlutterSdkPlatform.instance;
 
-  test('$MethodChannelVisitFlutterSdk is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelVisitFlutterSdk>());
-  });
-
-  test('getPlatformVersion', () async {
-    VisitFlutterSdk visitFlutterSdkPlugin = VisitFlutterSdk();
-    MockVisitFlutterSdkPlatform fakePlatform = MockVisitFlutterSdkPlatform();
-    VisitFlutterSdkPlatform.instance = fakePlatform;
-
-    expect(await visitFlutterSdkPlugin.getPlatformVersion(), '42');
-  });
 }

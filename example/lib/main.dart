@@ -8,56 +8,80 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return const MaterialApp(home: UrlInputScreen());
+  }
 }
 
-class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _visitFlutterSdkPlugin = VisitFlutterSdk();
+// First Screen: URL Input and Button to Navigate
+class UrlInputScreen extends StatefulWidget {
+  const UrlInputScreen({super.key});
 
   @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
+  _UrlInputScreenState createState() => _UrlInputScreenState();
+}
 
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _visitFlutterSdkPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
+class _UrlInputScreenState extends State<UrlInputScreen> {
+  final TextEditingController _urlController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+    return Scaffold(
+      appBar: AppBar(title: const Text("Enter SSO URL")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _urlController,
+              decoration: const InputDecoration(
+                labelText: "Enter SSO URL",
+                border: OutlineInputBorder(),
+              ),
+              maxLines: null,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Get the URL from the TextField and navigate to the next page
+                String url = _urlController.text;
+                if (url.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VisitFlutterSdkScreen(ssoUrl: url),
+                    ),
+                  );
+                } else {
+                  // Show a warning if the URL is empty
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a URL')),
+                  );
+                }
+              },
+              child: const Text("Open"),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+// Second Screen: VisitFlutterSdk
+class VisitFlutterSdkScreen extends StatelessWidget {
+  final String ssoUrl;
+
+  const VisitFlutterSdkScreen({super.key, required this.ssoUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: VisitFlutterSdk(ssoUrl: ssoUrl, isLoggingEnabled: true),
     );
   }
 }
