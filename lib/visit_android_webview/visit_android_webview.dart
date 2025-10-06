@@ -6,6 +6,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:location/location.dart';
 
 import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
@@ -171,73 +172,79 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   void _checkForLocationAndGPSPermission() async {
     if (widget.isLoggingEnabled) {
-      log('$TAG: checkForLocationAndGPSPermission: called');
+      log('$TAG: _checkForLocationAndGPSPermission: called');
     }
 
-    LocationPermission permission = await Geolocator.checkPermission();
+    // 1) LOCATION PERMISSION (sequential first step)
+    // Use permission_handler to avoid overlapping dialogs with Geolocator
+    var phStatus = await Permission.locationWhenInUse.status;
+    if (widget.isLoggingEnabled) {
+      log('$TAG: permission_handler status (before): $phStatus');
+    }
 
-    log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
-
-    if (permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always) {
+    if (!phStatus.isGranted && !phStatus.isPermanentlyDenied) {
+      phStatus = await Permission.locationWhenInUse.request();
       if (widget.isLoggingEnabled) {
-        log(
-            '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
-      }
-
-      bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
-
-      if (widget.isLoggingEnabled) {
-        log(
-            '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
-      }
-
-      if (isGPSPermissionEnabled) {
-        if (widget.isLoggingEnabled) {
-          log(
-              '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
-        }
-
-        String jsCode = "window.checkTheGpsPermission(true)";
-
-        _webViewController.evaluateJavascript(source: jsCode);
-      } else {
-        _showEnableGPSDialog();
-      }
-    } else {
-      permission = await Geolocator.requestPermission();
-
-      if (permission == LocationPermission.whileInUse ||
-          permission == LocationPermission.always) {
-        bool isGPSPermissionEnabled =
-        await Geolocator.isLocationServiceEnabled();
-
-        if (widget.isLoggingEnabled) {
-          log(
-              '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
-        }
-
-        if (isGPSPermissionEnabled) {
-          if (widget.isLoggingEnabled) {
-            log(
-                '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
-          }
-
-          String jsCode = "window.checkTheGpsPermission(true)";
-
-          _webViewController.evaluateJavascript(source: jsCode);
-        } else {
-          _showEnableGPSDialog();
-        }
-      } else {
-        if (widget.isLoggingEnabled) {
-          log(
-              '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
-        }
-
-        _showAndroidPermissionDialog();
+        log('$TAG: permission_handler status (after request): $phStatus');
       }
     }
+
+    if (phStatus.isPermanentlyDenied) {
+      if (widget.isLoggingEnabled) {
+        log('$TAG: location permission permanently denied');
+      }
+      _showAndroidPermissionDialog();
+      return;
+    }
+
+    if (!phStatus.isGranted) {
+      if (widget.isLoggingEnabled) {
+        log('$TAG: location permission denied');
+      }
+      _showAndroidPermissionDialog();
+      return;
+    }
+
+    // Reflect into Geolocator's model for downstream checks/logs
+    final geolocPerm = await Geolocator.checkPermission();
+    if (widget.isLoggingEnabled) {
+      log('$TAG: Geolocator.checkPermission -> $geolocPerm');
+    }
+
+    // 2) GPS / LOCATION SERVICE (sequential second step)
+    final loc = Location();
+    bool serviceEnabled = await loc.serviceEnabled();
+    if (widget.isLoggingEnabled) {
+      log('$TAG: Location.serviceEnabled (before): $serviceEnabled');
+    }
+
+    if (!serviceEnabled) {
+      try {
+        // On Android, this shows the in-app Google Play Services resolution dialog
+        serviceEnabled = await loc.requestService();
+        if (widget.isLoggingEnabled) {
+          log('$TAG: Location.requestService -> $serviceEnabled');
+        }
+      } catch (e, st) {
+        log('$TAG: requestService error: $e');
+        log('$TAG: stack: $st');
+        serviceEnabled = false;
+      }
+    }
+
+    if (!serviceEnabled) {
+      if (widget.isLoggingEnabled) {
+        log('$TAG: location services NOT enabled after prompt');
+      }
+      _showEnableGPSDialog();
+      return;
+    }
+
+    // 3) SUCCESS → notify WebView JS
+    if (widget.isLoggingEnabled) {
+      log('$TAG: window.checkTheGpsPermission(true) called');
+    }
+    _webViewController.evaluateJavascript(source: 'window.checkTheGpsPermission(true)');
   }
 
   _showEnableGPSDialog() async {
