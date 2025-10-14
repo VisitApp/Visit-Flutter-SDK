@@ -7,6 +7,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:location/location.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:open_filex/open_filex.dart';
 
 import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
@@ -52,7 +55,6 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   @override
   Widget build(BuildContext context) {
-
     InAppWebViewSettings settings = InAppWebViewSettings(
       javaScriptEnabled: true,
       allowFileAccessFromFileURLs: true,
@@ -61,9 +63,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       builtInZoomControls: true,
       geolocationEnabled: true,
       allowFileAccess: true,
-        allowsInlineMediaPlayback:true,
+      allowsInlineMediaPlayback: true,
     );
-
 
     return ColoredSafeArea(
       color: Colors.white,
@@ -86,8 +87,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                       try {
                         String jsonString = args[0];
 
-                        Map<String, dynamic> callbackResponse =
-                        jsonDecode(jsonString);
+                        Map<String, dynamic> callbackResponse = jsonDecode(
+                          jsonString,
+                        );
 
                         if (widget.isLoggingEnabled) {
                           log("$TAG: callbackResponse: $callbackResponse");
@@ -99,7 +101,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
                           String pdfLink = callbackResponse['link']!;
-                          _openPDF(pdfLink);
+                          downloadAndOpenPdf(context, pdfLink);
+                        } else if (methodName == "OPEN_LINK") {
+                          String link = callbackResponse['link']!;
+                          _openLink(link);
                         } else if (methodName == "CLOSE_VIEW") {
                           Navigator.pop(context);
                           // SystemNavigator.pop();
@@ -148,26 +153,117 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           ),
           if (_isLoading)
             const Center(
-                child: Align(
-                  alignment: Alignment(0.0, 0.7),
-                  // Align at 0.8 part of the screen height
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFEC6625),
-                  ),
-                )),
+              child: Align(
+                alignment: Alignment(0.0, 0.7),
+                // Align at 0.8 part of the screen height
+                child: CircularProgressIndicator(color: Color(0xFFEC6625)),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  void _openPDF(String pdfLink) async {
+  void _openLink(String link) async {
     try {
-      if (await canLaunchUrl(Uri.parse(pdfLink))) {
-        await launchUrl(Uri.parse(pdfLink));
+      if (await canLaunchUrl(Uri.parse(link))) {
+        await launchUrl(Uri.parse(link));
       } else {
-        throw 'Could not launch $pdfLink';
+        throw 'Could not launch $link';
       }
     } catch (e) {}
+  }
+
+  /// Downloads a PDF (or any file) to the app's temp directory without plugins.
+  /// Returns the absolute file path on success.
+  ///
+  /// [onProgress] is called with (receivedBytes, totalBytes). totalBytes can be -1 if unknown.
+  // Existing download function (from your code)
+  Future<String> downloadPdf({
+    required String url,
+    void Function(int received, int total)? onProgress,
+  }) async {
+    final uri = Uri.parse(url);
+    final dir = Directory.systemTemp.createTempSync('pdf_dl_');
+    final file = File('${dir.path}/${uri.pathSegments.last}');
+    final client = HttpClient();
+
+    final request = await client.getUrl(uri);
+    final response = await request.close();
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to download PDF: ${response.statusCode}');
+    }
+
+    final total = response.contentLength;
+    final sink = file.openWrite();
+    int received = 0;
+
+    await for (final chunk in response) {
+      received += chunk.length;
+      sink.add(chunk);
+      if (onProgress != null) onProgress(received, total);
+    }
+
+    await sink.close();
+    client.close();
+
+    return file.path;
+  }
+
+  // Function with progress dialog
+  Future<void> downloadAndOpenPdf(BuildContext context, String url) async {
+    double progress = 0.0;
+
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Downloading PDF'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: progress),
+              const SizedBox(height: 16),
+              Text('${(progress * 100).toStringAsFixed(0)}%'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final path = await downloadPdf(
+        url: url,
+        onProgress: (received, total) {
+          if (total > 0) {
+            progress = received / total;
+          } else {
+            progress = 0.0;
+          }
+          // Update the dialog UI
+          (context as Element).markNeedsBuild();
+        },
+      );
+
+      // Close the dialog once done
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Open PDF in external viewer
+      final result = await OpenFilex.open(path, type: 'application/pdf');
+      if (result.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open PDF: ${result.message}')),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Download failed: $e')));
+    }
   }
 
   void _checkForLocationAndGPSPermission() async {
@@ -244,28 +340,36 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     if (widget.isLoggingEnabled) {
       log('$TAG: window.checkTheGpsPermission(true) called');
     }
-    _webViewController.evaluateJavascript(source: 'window.checkTheGpsPermission(true)');
+    _webViewController.evaluateJavascript(
+      source: 'window.checkTheGpsPermission(true)',
+    );
   }
 
   _showEnableGPSDialog() async {
     return showPermissionDialog(
-        context, 'Please go to settings and turn on GPS',
-        onPositiveButtonPress: () {
-          Navigator.of(context).pop();
-          Geolocator.openLocationSettings();
-        }, onNegativeButtonPress: () {
-      Navigator.of(context).pop();
-    });
+      context,
+      'Please go to settings and turn on GPS',
+      onPositiveButtonPress: () {
+        Navigator.of(context).pop();
+        Geolocator.openLocationSettings();
+      },
+      onNegativeButtonPress: () {
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   void _showAndroidPermissionDialog() {
     showPermissionDialog(
-        context, 'Please go to setting and turn on the permission',
-        onPositiveButtonPress: () {
-          Navigator.of(context).pop();
-          openAppSettings();
-        }, onNegativeButtonPress: () {
-      Navigator.pop(context);
-    });
+      context,
+      'Please go to setting and turn on the permission',
+      onPositiveButtonPress: () {
+        Navigator.of(context).pop();
+        openAppSettings();
+      },
+      onNegativeButtonPress: () {
+        Navigator.pop(context);
+      },
+    );
   }
 }
