@@ -27,3 +27,24 @@ migrate_working_dir/
 **/doc/api/
 .dart_tool/
 build/
+
+
+
+
+
+
+# Gradle build and cache
+.gradle/
+example/android/.gradle/
+example/android/gradle/wrapper/daemon/
+example/android/gradle/wrapper/caches/
+example/android/gradle/wrapper/jdks/
+example/android/gradle/wrapper/native/
+example/android/gradle/wrapper/.tmp/
+example/android/gradle/wrapper/android/
+example/android/gradle/wrapper/wrapper/
+example/android/gradle/wrapper/kotlin-profile/
+example/android/gradle/wrapper/android.lock
+
+# Lock files generated locally
+example/pubspec.lock
