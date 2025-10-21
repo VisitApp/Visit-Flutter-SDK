@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -26,6 +27,9 @@ class VisitAndroidWebView extends StatefulWidget {
 }
 
 class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
+  static const platform = MethodChannel('visit_flutter_sdk');
+  String _batteryLevel = 'Unknown battery level.';
+
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
@@ -93,8 +97,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                       try {
                         String jsonString = args[0];
 
-                        Map<String, dynamic> callbackResponse =
-                        jsonDecode(jsonString);
+                        Map<String, dynamic> callbackResponse = jsonDecode(
+                          jsonString,
+                        );
 
                         if (widget.isLoggingEnabled) {
                           print("$TAG: callbackResponse: $callbackResponse");
@@ -124,6 +129,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         } else if (methodName == "OPEN_DAILER") {
                           int? phone = callbackResponse['number'];
                           _makePhoneCall(phone!);
+                        } else if (methodName == "BATTERY_STATUS") {
+                          _getBatteryLevel();
                         }
                       } catch (e) {
                         print("$TAG: args: $e");
@@ -166,17 +173,34 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
             ),
           ),
           if (_isLoading)
-            const Center(
-                child: Align(
-                  alignment: Alignment(0.0, 0.7),
-                  // Align at 0.8 part of the screen height
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFEC6625),
-                  ),
-                )),
+            const Align(
+              alignment: Alignment(0.0, 0.7),
+              // Align at 0.8 part of the screen height
+              child: CircularProgressIndicator(color: Color(0xFFEC6625)),
+            ),
+
+          Align(
+            alignment: Alignment(0.0, 0.7),
+            // Align at 0.8 part of the screen height
+            child: Text("Battery Level: $_batteryLevel"),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _getBatteryLevel() async {
+    String batteryLevel;
+    try {
+      final result = await platform.invokeMethod<int>('getBatteryLevel');
+      batteryLevel = 'Battery level at $result % .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
+
+    setState(() {
+      _batteryLevel = batteryLevel;
+    });
   }
 
   Map<String, String> _buildHeaders(Uri uri, String? authToken) {
@@ -381,23 +405,29 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   _showEnableGPSDialog() async {
     return showPermissionDialog(
-        context, 'Please go to settings and turn on GPS',
-        onPositiveButtonPress: () {
-          Navigator.of(context).pop();
-          Geolocator.openLocationSettings();
-        }, onNegativeButtonPress: () {
-      Navigator.of(context).pop();
-    });
+      context,
+      'Please go to settings and turn on GPS',
+      onPositiveButtonPress: () {
+        Navigator.of(context).pop();
+        Geolocator.openLocationSettings();
+      },
+      onNegativeButtonPress: () {
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   void _showAndroidPermissionDialog() {
     showPermissionDialog(
-        context, 'Please go to setting and turn on the permission',
-        onPositiveButtonPress: () {
-          Navigator.of(context).pop();
-          openAppSettings();
-        }, onNegativeButtonPress: () {
-      Navigator.pop(context);
-    });
+      context,
+      'Please go to setting and turn on the permission',
+      onPositiveButtonPress: () {
+        Navigator.of(context).pop();
+        openAppSettings();
+      },
+      onNegativeButtonPress: () {
+        Navigator.pop(context);
+      },
+    );
   }
 }
