@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-void showPermissionDialog(BuildContext context, String titleText,
-    {required VoidCallback onPositiveButtonPress,
-    required VoidCallback onNegativeButtonPress}) {
+void showPermissionDialog(
+  BuildContext context, {
+  required String titleText,
+  required String descriptionText,
+  required String positiveCTAText,
+  required String negativeCTAText,
+  required VoidCallback onPositiveButtonPress,
+  required VoidCallback onNegativeButtonPress,
+}) {
   showDialog(
     context: context,
     builder: (_) => AlertDialog(
@@ -26,26 +32,28 @@ void showPermissionDialog(BuildContext context, String titleText,
                     const CircularProgressIndicator(),
               ),
               const SizedBox(width: 10),
-              const Text(
-                'Permission required!',
+              Text(
+                titleText,
                 style: TextStyle(
-                    fontFamily: 'Mulish',
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    fontStyle: FontStyle.normal,
-                    color: Color(0xFF17181A)),
+                  fontFamily: 'Mulish',
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  fontStyle: FontStyle.normal,
+                  color: Color(0xFF17181A),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
-            titleText,
+            descriptionText,
             style: const TextStyle(
-                fontFamily: 'Mulish',
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                fontStyle: FontStyle.normal,
-                color: Color(0xFF424242)),
+              fontFamily: 'Mulish',
+              fontWeight: FontWeight.w400,
+              fontSize: 14,
+              fontStyle: FontStyle.normal,
+              color: Color(0xFF424242),
+            ),
           ),
         ],
       ),
@@ -66,10 +74,12 @@ void showPermissionDialog(BuildContext context, String titleText,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 17),
+                      vertical: 10,
+                      horizontal: 17,
+                    ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'Settings',
+                    child: Text(
+                      positiveCTAText,
                       style: TextStyle(
                         fontFamily: 'Mulish',
                         fontWeight: FontWeight.w600,
@@ -88,14 +98,15 @@ void showPermissionDialog(BuildContext context, String titleText,
                 overlayColor: WidgetStateProperty.all(Colors.transparent),
                 splashFactory: NoSplash.splashFactory,
               ),
-              child: const Text(
-                'Cancel',
+              child: Text(
+                negativeCTAText,
                 style: TextStyle(
-                    fontFamily: 'Mulish',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    fontStyle: FontStyle.normal,
-                    color: Color(0xFFEC6625)),
+                  fontFamily: 'Mulish',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  fontStyle: FontStyle.normal,
+                  color: Color(0xFFEC6625),
+                ),
               ),
             ),
           ],
