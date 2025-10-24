@@ -275,14 +275,25 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   Future<void> _updateApiBaseUrl(Map<String, dynamic> callbackResponse) async {
     log("$TAG: _updateApiBaseUrl() called");
 
-
     String apiBaseUrl = callbackResponse['apiBaseUrl']!;
     String authtoken = callbackResponse['authtoken']!;
     int googleFitLastSync = int.parse(callbackResponse['googleFitLastSync']!);
     int gfHourlyLastSync = int.parse(callbackResponse['gfHourlyLastSync']!);
 
-    log("$TAG: apiBaseUrl: $apiBaseUrl, authtoken: $authtoken,ʼ)
+    log("$TAG: apiBaseUrl: $apiBaseUrl, authtoken: $authtoken, googleFitLastSync: $googleFitLastSync, gfHourlyLastSync: $gfHourlyLastSync");
 
+    String? syncMessage;
+    try {
+      syncMessage = await platform.invokeMethod<String?>(
+        'updateApiBaseUrl',
+        {'apiBaseUrl': apiBaseUrl, 'authtoken': authtoken, 'googleFitLastSync': googleFitLastSync, 'gfHourlyLastSync': gfHourlyLastSync},
+      );
+
+      log("$TAG: message: $syncMessage");
+
+    } on PlatformException catch (e) {
+      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+    }
   }
 
   Future<void> _getDataToGenerateDetailedGraph(
