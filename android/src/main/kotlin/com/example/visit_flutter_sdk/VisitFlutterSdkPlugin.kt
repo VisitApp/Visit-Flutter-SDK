@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.BatteryManager
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.health.connect.client.PermissionController
@@ -31,7 +32,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.lang.reflect.Method
 
 /** VisitFlutterSdkPlugin */
 class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
@@ -209,6 +209,8 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             openHealthConnectApp(result)
         } else if (call.method == "requestActivityDataFromHealthConnect") {
             requestActivityDataFromHealthConnect(call, result)
+        } else if (call.method == "updateApiBaseUrl") {
+            updateApiBaseUrl(call, result)
         } else {
             result.notImplemented()
         }
@@ -285,7 +287,7 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         // Retrieve arguments safely
         val type: String? = call.argument<String>("type")
         val frequency: String? = call.argument<String>("frequency")
-        val timestamp: Long = (call.argument<Number>("timestamp") ?: 0).toLong()
+        val timestamp: Long = call.argument<Long>("timestamp")!!
 
 
 
@@ -304,6 +306,47 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 healthConnectUtil!!.requestPermission()
             }
         }
+    }
+
+
+    private fun updateApiBaseUrl(
+        call: MethodCall,
+        promise: Result
+    ) {
+        val apiBaseUrl: String = call.argument<String>("apiBaseUrl")!!
+        val authToken: String = call.argument<String>("authtoken")!!
+        val googleFitLastSync: Long = call.argument<Long>("googleFitLastSync")!!
+        val gfHourlyLastSync: Long = call.argument<Long>("gfHourlyLastSync")!!
+
+
+
+        if (isLoggingEnabled) {
+            Log.d(
+                "mytag",
+                "GoogleFitPermissionModule syncDataWithServer(): baseUrl: " + apiBaseUrl + " authToken: " + authToken + " googleFitLastSync: " + googleFitLastSync + "  gfHourlyLastSync:" + gfHourlyLastSync
+            )
+        }
+
+        visitSessionStorage.saveBaseUrl("$apiBaseUrl/")
+        visitSessionStorage.saveVisitAuthToken(authToken)
+        visitSessionStorage.saveDailyLastSyncTimeStamp(googleFitLastSync)
+        visitSessionStorage.saveHourlyLastSyncTimeStamp(gfHourlyLastSync)
+
+        if (!syncDataWithServer && healthConnectUtil != null) {
+            Timber.d("mytag: syncDataWithServer() called")
+            visitStepSyncHelper?.sendDataToVisitServer(
+                healthConnectUtil!!,
+                googleFitLastSync,
+                gfHourlyLastSync,
+                "$apiBaseUrl/",
+                authToken
+            )
+            syncDataWithServer = true
+            promise.success("Health Data Sync Started")
+        } else {
+            promise.success("Health Data Already Synced")
+        }
+
     }
 
 
