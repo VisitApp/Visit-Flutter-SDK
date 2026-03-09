@@ -1,3 +1,7 @@
+## 1.0.10
+
+- Fixed pdf not opening in external browser on ios
+
 ## 1.0.9
 
 - Update flutter version from 3.24.3 to 3.32.2
