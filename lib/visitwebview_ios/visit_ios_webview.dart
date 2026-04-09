@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -91,12 +90,12 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                         );
 
                         if (widget.isLoggingEnabled) {
-                          log("$TAG: callbackResponse: $callbackResponse");
+                          print("$TAG: callbackResponse: $callbackResponse");
                         }
 
                         String methodName = callbackResponse['name']!;
 
-                        log("methodName @@@ $methodName");
+                        print("methodName @@@ $methodName");
 
                         if (methodName == "GET_LOCATION_PERMISSIONS") {
                           _checkForLocationAndGPSPermission();
@@ -120,7 +119,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                           _makePhoneCall(phone!);
                         }
                       } catch (e) {
-                        log("$TAG: args: $e");
+                        print("$TAG: args: $e");
                       }
                     },
                   );
@@ -316,17 +315,17 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
 
   void _checkForLocationAndGPSPermission() async {
     if (widget.isLoggingEnabled) {
-      log('$TAG: checkForLocationAndGPSPermission: called');
+      print('$TAG: checkForLocationAndGPSPermission: called');
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
 
-    log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+    print('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       if (widget.isLoggingEnabled) {
-        log(
+        print(
           '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
         );
       }
@@ -334,14 +333,14 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (widget.isLoggingEnabled) {
-        log(
+        print(
           '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled',
         );
       }
 
       if (isGPSPermissionEnabled) {
         if (widget.isLoggingEnabled) {
-          log(
+          print(
             '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called',
           );
         }
@@ -361,14 +360,14 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
             await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
-          log(
+          print(
             '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled',
           );
         }
 
         if (isGPSPermissionEnabled) {
           if (widget.isLoggingEnabled) {
-            log(
+            print(
               '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called',
             );
           }
@@ -381,7 +380,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
         }
       } else {
         if (widget.isLoggingEnabled) {
-          log(
+          print(
             '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
           );
         }

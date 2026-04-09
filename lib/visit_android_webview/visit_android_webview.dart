@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -89,7 +88,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         jsonDecode(jsonString);
 
                         if (widget.isLoggingEnabled) {
-                          log("$TAG: callbackResponse: $callbackResponse");
+                          print("$TAG: callbackResponse: $callbackResponse");
                         }
 
                         String methodName = callbackResponse['name']!;
@@ -107,7 +106,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                           _makePhoneCall(phone!);
                         }
                       } catch (e) {
-                        log("$TAG: args: $e");
+                        print("$TAG: args: $e");
                       }
                     },
                   );
@@ -171,30 +170,30 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   void _checkForLocationAndGPSPermission() async {
     if (widget.isLoggingEnabled) {
-      log('$TAG: checkForLocationAndGPSPermission: called');
+      print('$TAG: checkForLocationAndGPSPermission: called');
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
 
-    log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+    print('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       if (widget.isLoggingEnabled) {
-        log(
+        print(
             '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
       }
 
       bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (widget.isLoggingEnabled) {
-        log(
+        print(
             '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
       }
 
       if (isGPSPermissionEnabled) {
         if (widget.isLoggingEnabled) {
-          log(
+          print(
               '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
         }
 
@@ -213,13 +212,13 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
-          log(
+          print(
               '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
         }
 
         if (isGPSPermissionEnabled) {
           if (widget.isLoggingEnabled) {
-            log(
+            print(
                 '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
           }
 
@@ -231,7 +230,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         }
       } else {
         if (widget.isLoggingEnabled) {
-          log(
+          print(
               '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
         }
 
