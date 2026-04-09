@@ -102,6 +102,8 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                         } else if (methodName == "DOWNLOAD_PDF") {
                           final String? documentLink = callbackResponse['link']
                               ?.toString();
+                          final String? authToken = callbackResponse['authToken']
+                              ?.toString();
 
                           if (documentLink == null || documentLink.isEmpty) {
                             return;
@@ -109,7 +111,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
 
                           _downloadFile(
                             link: documentLink,
-                            authToken: _extractAuthToken(callbackResponse),
+                            authToken: authToken,
                           );
                         } else if (methodName == "CLOSE_VIEW") {
                           Navigator.pop(context);
@@ -168,27 +170,6 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
         ],
       ),
     );
-  }
-
-  String? _extractAuthToken(Map<String, dynamic> callbackResponse) {
-    final dynamic authToken = callbackResponse['auth'];
-
-    if (authToken is String && authToken.trim().isNotEmpty) {
-      return authToken;
-    }
-
-    final dynamic headers = callbackResponse['headers'];
-    if (headers is Map) {
-      final dynamic authorizationToken =
-          headers['Authorization'] ?? headers['authorization'];
-
-      if (authorizationToken is String &&
-          authorizationToken.trim().isNotEmpty) {
-        return authorizationToken;
-      }
-    }
-
-    return null;
   }
 
   Map<String, String> _buildHeaders(String? authToken) {
