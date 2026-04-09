@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:convert';
 import 'dart:io';
 
@@ -96,7 +95,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         );
 
                         if (widget.isLoggingEnabled) {
-                          log("$TAG: callbackResponse: $callbackResponse");
+                          print("$TAG: callbackResponse: $callbackResponse");
                         }
 
                         String methodName = callbackResponse['name']!;
@@ -137,14 +136,14 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                           _getDataToGenerateDetailedGraph(callbackResponse);
                         }
                       } catch (e) {
-                        log("$TAG: args: $e");
+                        print("$TAG: args: $e");
                       }
                     },
                   );
                 },
                 onLoadStart: (controller, url) {
                   setState(() {
-                    log('Page started loading: $url');
+                    print('Page started loading: $url');
                     // _isLoading = true;
                   });
                 },
@@ -193,7 +192,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   }
 
   Future<void> _getHealthConnectStatus() async {
-    log("$TAG: _getHealthConnectStatus() called");
+    print("$TAG: _getHealthConnectStatus() called");
 
     String? healthConnectStatus;
     try {
@@ -225,14 +224,14 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           _getDailyFitnessData();
         }
       }
-      log("$TAG: callbackResponse: $healthConnectStatus");
+      print("$TAG: callbackResponse: $healthConnectStatus");
     } on PlatformException catch (e) {
-      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+      print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
   }
 
   Future<void> _getDailyFitnessData() async {
-    log("$TAG: _getDailyFitnessData() called");
+    print("$TAG: _getDailyFitnessData() called");
 
     String? dailyFitnessData;
     try {
@@ -240,18 +239,18 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         'requestDailyFitnessData',
       );
 
-      log("$TAG: callbackResponse: $dailyFitnessData");
+      print("$TAG: callbackResponse: $dailyFitnessData");
 
       if (dailyFitnessData != null) {
         _webViewController.evaluateJavascript(source: dailyFitnessData);
       }
     } on PlatformException catch (e) {
-      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+      print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
   }
 
   Future<void> _askForHealthConnectPermission() async {
-    log("$TAG: _askForHealthConnectPermission() called");
+    print("$TAG: _askForHealthConnectPermission() called");
 
     String? isPermissionGranted;
     try {
@@ -259,7 +258,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         'askForFitnessPermission',
       );
 
-      log("$TAG: callbackResponse: $isPermissionGranted");
+      print("$TAG: callbackResponse: $isPermissionGranted");
 
       if (isPermissionGranted == "GRANTED") {
         _getHealthConnectStatus();
@@ -267,17 +266,17 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         _showHealthConnectPermissionDeniedDialog();
       }
     } on PlatformException catch (e) {
-      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+      print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
   }
 
   Future<void> _openHealthConnectSettings() async {
-    log("$TAG: _openHealthConnectSettings() called");
+    print("$TAG: _openHealthConnectSettings() called");
 
     try {
       await platform.invokeMethod<String?>('openHealthConnectApp');
     } on PlatformException catch (e) {
-      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+      print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
   }
 
@@ -288,14 +287,14 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   }
 
   Future<void> _updateApiBaseUrl(Map<String, dynamic> callbackResponse) async {
-    log("$TAG: _updateApiBaseUrl() called");
+    print("$TAG: _updateApiBaseUrl() called");
 
     String apiBaseUrl = callbackResponse['apiBaseUrl']!;
     String authtoken = callbackResponse['authtoken']!;
     int googleFitLastSync = int.parse(callbackResponse['googleFitLastSync']!);
     int gfHourlyLastSync = int.parse(callbackResponse['gfHourlyLastSync']!);
 
-    log("$TAG: apiBaseUrl: $apiBaseUrl, authtoken: $authtoken, googleFitLastSync: $googleFitLastSync, gfHourlyLastSync: $gfHourlyLastSync");
+    print("$TAG: apiBaseUrl: $apiBaseUrl, authtoken: $authtoken, googleFitLastSync: $googleFitLastSync, gfHourlyLastSync: $gfHourlyLastSync");
 
     String? syncMessage;
     try {
@@ -304,23 +303,23 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         {'apiBaseUrl': apiBaseUrl, 'authtoken': authtoken, 'googleFitLastSync': googleFitLastSync, 'gfHourlyLastSync': gfHourlyLastSync},
       );
 
-      log("$TAG: message: $syncMessage");
+      print("$TAG: message: $syncMessage");
 
     } on PlatformException catch (e) {
-      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+      print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
   }
 
   Future<void> _getDataToGenerateDetailedGraph(
     Map<String, dynamic> callbackResponse,
   ) async {
-    log("$TAG: _getDataToGenerateDetailedGraph() called");
+    print("$TAG: _getDataToGenerateDetailedGraph() called");
 
     String type = callbackResponse['type']!;
     String frequency = callbackResponse['frequency']!;
     int timestamp = int.parse(callbackResponse['timestamp']!);
 
-    log("$TAG: type: $type, frequency: $frequency, timestamp: $timestamp");
+    print("$TAG: type: $type, frequency: $frequency, timestamp: $timestamp");
 
     String? graphData;
     try {
@@ -331,13 +330,13 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
       String finalString = "window.$graphData";
 
-      log("$TAG: finalString: $finalString");
+      print("$TAG: finalString: $finalString");
 
       if (graphData != null) {
         _webViewController.evaluateJavascript(source: finalString);
       }
     } on PlatformException catch (e) {
-      log("$TAG:Failed to get Health Connect Status: '${e.message}'.");
+      print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
   }
 
@@ -479,30 +478,30 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   void _checkForLocationAndGPSPermission() async {
     if (widget.isLoggingEnabled) {
-      log('$TAG: checkForLocationAndGPSPermission: called');
+      print('$TAG: checkForLocationAndGPSPermission: called');
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
 
-    log('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+    print('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       if (widget.isLoggingEnabled) {
-        log(
+        print(
             '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
       }
 
       bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (widget.isLoggingEnabled) {
-        log(
+        print(
             '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
       }
 
       if (isGPSPermissionEnabled) {
         if (widget.isLoggingEnabled) {
-          log(
+          print(
               '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
         }
 
@@ -521,13 +520,13 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
             await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
-          log(
+          print(
               '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
         }
 
         if (isGPSPermissionEnabled) {
           if (widget.isLoggingEnabled) {
-            log(
+            print(
                 '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
           }
 
@@ -539,7 +538,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         }
       } else {
         if (widget.isLoggingEnabled) {
-          log(
+          print(
               '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
         }
 
