@@ -7,6 +7,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../colored_safe_area_widget.dart';
@@ -171,10 +172,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
   }
 
   String? _extractAuthToken(Map<String, dynamic> callbackResponse) {
-    final dynamic authToken =
-        callbackResponse['authToken'] ??
-        callbackResponse['auth_token'] ??
-        callbackResponse['token'];
+    final dynamic authToken = callbackResponse['auth'];
 
     if (authToken is String && authToken.trim().isNotEmpty) {
       return authToken;
@@ -248,7 +246,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       await response.pipe(sink);
       await sink.flush();
 
-      _showSnackBar('File saved to $filePath');
+      await _openShareSheet(filePath);
     } catch (error) {
       _showSnackBar('Failed to download file: $error');
     } finally {
@@ -293,6 +291,17 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       default:
         return '';
     }
+  }
+
+  Future<void> _openShareSheet(String filePath) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
+    await Share.shareXFiles([
+      XFile(filePath),
+    ], sharePositionOrigin: sharePositionOrigin);
   }
 
   void _showSnackBar(String message) {
