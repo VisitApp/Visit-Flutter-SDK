@@ -178,11 +178,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       return const {};
     }
 
-    final authorizationValue = token.startsWith('Bearer ')
-        ? token
-        : 'Bearer $token';
-
-    return {'Authorization': authorizationValue};
+    return {'Authorization': token};
   }
 
   Future<void> _downloadFile({required String link, String? authToken}) async {
@@ -208,7 +204,9 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       client = HttpClient();
       final request = await client.getUrl(uri);
 
-      headers.forEach(request.headers.add);
+      headers.forEach((name, value) {
+        request.headers.add(name, value);
+      });
 
       final response = await request.close();
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -223,8 +221,10 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       final file = File(filePath);
 
       sink = file.openWrite();
-      await response.pipe(sink);
+      await sink.addStream(response);
       await sink.flush();
+      await sink.close();
+      sink = null;
 
       await _openShareSheet(filePath);
     } catch (error) {

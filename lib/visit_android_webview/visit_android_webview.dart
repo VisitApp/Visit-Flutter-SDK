@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../alert_dialog.dart';
@@ -27,6 +30,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
+  bool _isDownloading = false;
 
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
@@ -50,7 +54,6 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   @override
   Widget build(BuildContext context) {
-
     InAppWebViewSettings settings = InAppWebViewSettings(
       javaScriptEnabled: true,
       allowFileAccessFromFileURLs: true,
@@ -59,9 +62,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       builtInZoomControls: true,
       geolocationEnabled: true,
       allowFileAccess: true,
-        allowsInlineMediaPlayback:true,
+      allowsInlineMediaPlayback: true,
     );
-
 
     return ColoredSafeArea(
       color: Colors.white,
@@ -96,8 +98,19 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         if (methodName == "GET_LOCATION_PERMISSIONS") {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
-                          String pdfLink = callbackResponse['link']!;
-                          _openPDF(pdfLink);
+                          final String? documentLink = callbackResponse['link']
+                              ?.toString();
+                          final String? authToken = callbackResponse['authToken']
+                              ?.toString();
+
+                          if (documentLink == null || documentLink.isEmpty) {
+                            return;
+                          }
+
+                          _downloadFile(
+                            link: documentLink,
+                            authToken: authToken,
+                          );
                         } else if (methodName == "CLOSE_VIEW") {
                           Navigator.pop(context);
                           // SystemNavigator.pop();
@@ -158,14 +171,126 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     );
   }
 
-  void _openPDF(String pdfLink) async {
+  Map<String, String> _buildHeaders(String? authToken) {
+    final token = authToken?.trim();
+    if (token == null || token.isEmpty) {
+      return const {};
+    }
+
+    return {'Authorization': token};
+  }
+
+  Future<void> _downloadFile({required String link, String? authToken}) async {
+    if (_isDownloading) {
+      return;
+    }
+
+    final uri = Uri.tryParse(link);
+    if (uri == null) {
+      _showSnackBar('Invalid file link.');
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+    });
+
+    HttpClient? client;
+    IOSink? sink;
+    final headers = _buildHeaders(authToken);
+
     try {
-      if (await canLaunchUrl(Uri.parse(pdfLink))) {
-        await launchUrl(Uri.parse(pdfLink));
-      } else {
-        throw 'Could not launch $pdfLink';
+      client = HttpClient();
+      final request = await client.getUrl(uri);
+
+      headers.forEach((name, value) {
+        request.headers.add(name, value);
+      });
+
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException(
+          'Download failed with status code ${response.statusCode}.',
+        );
       }
-    } catch (e) {}
+
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath =
+          '${directory.path}/${_buildFileName(link, response.headers.contentType?.mimeType)}';
+      final file = File(filePath);
+
+      sink = file.openWrite();
+      await sink.addStream(response);
+      await sink.flush();
+      await sink.close();
+      sink = null;
+
+      await _openShareSheet(filePath);
+    } catch (error) {
+      _showSnackBar('Failed to download file: $error');
+    } finally {
+      await sink?.close();
+      client?.close(force: true);
+
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+        });
+      }
+    }
+  }
+
+  String _buildFileName(String link, String? mimeType) {
+    final uri = Uri.tryParse(link);
+    final rawName = uri?.pathSegments.isNotEmpty == true
+        ? uri!.pathSegments.last
+        : 'document';
+    final sanitizedName = rawName.isEmpty ? 'document' : rawName;
+
+    if (sanitizedName.contains('.')) {
+      return sanitizedName;
+    }
+
+    final extension = _fileExtensionFromMimeType(mimeType);
+    return '$sanitizedName$extension';
+  }
+
+  String _fileExtensionFromMimeType(String? mimeType) {
+    switch (mimeType) {
+      case 'application/pdf':
+        return '.pdf';
+      case 'image/png':
+        return '.png';
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/webp':
+        return '.webp';
+      case 'image/gif':
+        return '.gif';
+      default:
+        return '';
+    }
+  }
+
+  Future<void> _openShareSheet(String filePath) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
+    await Share.shareXFiles([
+      XFile(filePath),
+    ], sharePositionOrigin: sharePositionOrigin);
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _checkForLocationAndGPSPermission() async {
@@ -209,7 +334,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         bool isGPSPermissionEnabled =
-        await Geolocator.isLocationServiceEnabled();
+            await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
           print(
