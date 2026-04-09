@@ -34,38 +34,41 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
       appBar: AppBar(title: const Text("Enter SSO URL")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                labelText: "Enter SSO URL",
-                border: OutlineInputBorder(),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: _urlController,
+                decoration: const InputDecoration(
+                  labelText: "Enter SSO URL",
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: null,
               ),
-              maxLines: null,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Get the URL from the TextField and navigate to the next page
-                String url = _urlController.text;
-                if (url.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VisitFlutterSdkScreen(ssoUrl: url),
-                    ),
-                  );
-                } else {
-                  // Show a warning if the URL is empty
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a URL')),
-                  );
-                }
-              },
-              child: const Text("Open"),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // Get the URL from the TextField and navigate to the next page
+                  String url = _urlController.text;
+                  if (url.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            VisitFlutterSdkScreen(ssoUrl: url),
+                      ),
+                    );
+                  } else {
+                    // Show a warning if the URL is empty
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a URL')),
+                    );
+                  }
+                },
+                child: const Text("Open"),
+              ),
+            ],
+          ),
         ),
       ),
     );

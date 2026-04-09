@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,6 +29,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
+  bool _isDownloading = false;
 
   InAppWebViewSettings settings = InAppWebViewSettings(
     javaScriptEnabled: true,
@@ -98,8 +100,17 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                         if (methodName == "GET_LOCATION_PERMISSIONS") {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
-                          String pdfLink = callbackResponse['link']!;
-                          _openPDF(pdfLink);
+                          final String? documentLink = callbackResponse['link']
+                              ?.toString();
+
+                          if (documentLink == null || documentLink.isEmpty) {
+                            return;
+                          }
+
+                          _downloadFile(
+                            link: documentLink,
+                            authToken: _extractAuthToken(callbackResponse),
+                          );
                         } else if (methodName == "CLOSE_VIEW") {
                           Navigator.pop(context);
                           // SystemNavigator.pop();
@@ -159,18 +170,139 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     );
   }
 
-  void _openPDF(String pdfLink) async {
-    try {
-      final Uri url = Uri.parse(pdfLink);
+  String? _extractAuthToken(Map<String, dynamic> callbackResponse) {
+    final dynamic authToken =
+        callbackResponse['authToken'] ??
+        callbackResponse['auth_token'] ??
+        callbackResponse['token'];
 
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch $pdfLink';
-      }
-    } catch (e) {
-      print(e);
+    if (authToken is String && authToken.trim().isNotEmpty) {
+      return authToken;
     }
+
+    final dynamic headers = callbackResponse['headers'];
+    if (headers is Map) {
+      final dynamic authorizationToken =
+          headers['Authorization'] ?? headers['authorization'];
+
+      if (authorizationToken is String &&
+          authorizationToken.trim().isNotEmpty) {
+        return authorizationToken;
+      }
+    }
+
+    return null;
+  }
+
+  Map<String, String> _buildHeaders(String? authToken) {
+    final token = authToken?.trim();
+    if (token == null || token.isEmpty) {
+      return const {};
+    }
+
+    final authorizationValue = token.startsWith('Bearer ')
+        ? token
+        : 'Bearer $token';
+
+    return {'Authorization': authorizationValue};
+  }
+
+  Future<void> _downloadFile({required String link, String? authToken}) async {
+    if (_isDownloading) {
+      return;
+    }
+
+    final uri = Uri.tryParse(link);
+    if (uri == null) {
+      _showSnackBar('Invalid file link.');
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+    });
+
+    HttpClient? client;
+    IOSink? sink;
+    final headers = _buildHeaders(authToken);
+
+    try {
+      client = HttpClient();
+      final request = await client.getUrl(uri);
+
+      headers.forEach(request.headers.add);
+
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException(
+          'Download failed with status code ${response.statusCode}.',
+        );
+      }
+
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath =
+          '${directory.path}/${_buildFileName(link, response.headers.contentType?.mimeType)}';
+      final file = File(filePath);
+
+      sink = file.openWrite();
+      await response.pipe(sink);
+      await sink.flush();
+
+      _showSnackBar('File saved to $filePath');
+    } catch (error) {
+      _showSnackBar('Failed to download file: $error');
+    } finally {
+      await sink?.close();
+      client?.close(force: true);
+
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+        });
+      }
+    }
+  }
+
+  String _buildFileName(String link, String? mimeType) {
+    final uri = Uri.tryParse(link);
+    final rawName = uri?.pathSegments.isNotEmpty == true
+        ? uri!.pathSegments.last
+        : 'document';
+    final sanitizedName = rawName.isEmpty ? 'document' : rawName;
+
+    if (sanitizedName.contains('.')) {
+      return sanitizedName;
+    }
+
+    final extension = _fileExtensionFromMimeType(mimeType);
+    return '$sanitizedName$extension';
+  }
+
+  String _fileExtensionFromMimeType(String? mimeType) {
+    switch (mimeType) {
+      case 'application/pdf':
+        return '.pdf';
+      case 'image/png':
+        return '.png';
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/webp':
+        return '.webp';
+      case 'image/gif':
+        return '.gif';
+      default:
+        return '';
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _checkForLocationAndGPSPermission() async {
