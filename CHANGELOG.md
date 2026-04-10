@@ -1,3 +1,7 @@
+## 1.0.11
+
+- Add pdf download within the app and share it via share-sheet.
+
 ## 1.0.10
 
 - Fixed pdf not opening in external browser on ios
