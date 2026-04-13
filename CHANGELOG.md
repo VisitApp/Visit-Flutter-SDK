@@ -1,3 +1,7 @@
+## 2.0.1
+
+- Downgraded flutter dependencies for PLMI.
+
 ## 2.0.0
 
 - Downgraded SDK and package constraints to support Flutter 3.7.0 / Dart 2.19.0 for PLMI.
