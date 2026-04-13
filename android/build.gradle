@@ -27,7 +27,7 @@ apply plugin: "kotlin-android"
 android {
     namespace = "com.example.visit_flutter_sdk"
 
-    compileSdk = 35
+    compileSdk = 34
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

@@ -54,15 +54,21 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
   @override
   Widget build(BuildContext context) {
-    InAppWebViewSettings settings = InAppWebViewSettings(
-      javaScriptEnabled: true,
-      allowFileAccessFromFileURLs: true,
-      transparentBackground: true,
-      useWideViewPort: true,
-      builtInZoomControls: true,
-      geolocationEnabled: true,
-      allowFileAccess: true,
-      allowsInlineMediaPlayback: true,
+    final options = InAppWebViewGroupOptions(
+      crossPlatform: InAppWebViewOptions(
+        javaScriptEnabled: true,
+        allowFileAccessFromFileURLs: true,
+        transparentBackground: true,
+      ),
+      android: AndroidInAppWebViewOptions(
+        useWideViewPort: true,
+        builtInZoomControls: true,
+        geolocationEnabled: true,
+        allowFileAccess: true,
+      ),
+      ios: IOSInAppWebViewOptions(
+        allowsInlineMediaPlayback: true,
+      ),
     );
 
     return ColoredSafeArea(
@@ -74,8 +80,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
             child: Scaffold(
               backgroundColor: Colors.white,
               body: InAppWebView(
-                initialSettings: settings,
-                initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
+                initialOptions: options,
+                initialUrlRequest: URLRequest(
+                  url: Uri.parse(widget.initialUrl),
+                ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
 
@@ -135,7 +143,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     // _isLoading = false;
                   });
                 },
-                onGeolocationPermissionsShowPrompt: (controller, origin) async {
+                androidOnGeolocationPermissionsShowPrompt: (
+                  controller,
+                  origin,
+                ) async {
                   // Ask runtime permission first (using permission_handler)
                   var status = await Permission.locationWhenInUse.status;
                   if (!status.isGranted) {

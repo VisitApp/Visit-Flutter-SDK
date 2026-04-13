@@ -1,28 +1,28 @@
 name: visit_flutter_sdk
 description: "visit_flutter_sdk is a Flutter plugin that integrates web views, URL handling, location services, and permission management. Enhance your mobile app functionality effortlessly with this versatile toolkit!"
-version: 1.0.12
+version: 2.0.0
 homepage:
 
 environment:
-  sdk: ^3.8.1
-  flutter: '>=3.3.0'
+  sdk: ">=2.19.0 <4.0.0"
+  flutter: ">=3.7.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_inappwebview: ^6.1.4
-  flutter_svg: ^2.2.1
+  flutter_inappwebview: ^5.8.0
+  flutter_svg: ^1.1.6
   geolocator: ^10.1.1
-  path_provider: ^2.1.5
-  permission_handler: ^12.0.1
+  path_provider: ^2.1.1
+  permission_handler: ^10.4.5
   plugin_platform_interface: ^2.0.2
-  share_plus: ^10.0.1
-  url_launcher: ^6.3.2
+  share_plus: ^7.2.2
+  url_launcher: ^6.1.11
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^2.0.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
