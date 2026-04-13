@@ -171,9 +171,12 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     );
   }
 
-  Map<String, String> _buildHeaders(String? authToken) {
+  Map<String, String> _buildHeaders(Uri uri, String? authToken) {
     final token = authToken?.trim();
-    if (token == null || token.isEmpty) {
+    final host = uri.host.toLowerCase();
+    if (token == null ||
+        token.isEmpty ||
+        host.contains('amazonaws.com')) {
       return const {};
     }
 
@@ -197,7 +200,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
     HttpClient? client;
     IOSink? sink;
-    final headers = _buildHeaders(authToken);
+    final headers = _buildHeaders(uri, authToken);
 
     try {
       client = HttpClient();
