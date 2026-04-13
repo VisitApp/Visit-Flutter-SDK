@@ -31,15 +31,21 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
   bool _isLoading = false;
   bool _isDownloading = false;
 
-  InAppWebViewSettings settings = InAppWebViewSettings(
-    javaScriptEnabled: true,
-    allowFileAccessFromFileURLs: true,
-    transparentBackground: true,
-    useWideViewPort: true,
-    builtInZoomControls: true,
-    geolocationEnabled: true,
-    allowFileAccess: true,
-    allowsInlineMediaPlayback: true,
+  final InAppWebViewGroupOptions settings = InAppWebViewGroupOptions(
+    crossPlatform: InAppWebViewOptions(
+      javaScriptEnabled: true,
+      allowFileAccessFromFileURLs: true,
+      transparentBackground: true,
+    ),
+    android: AndroidInAppWebViewOptions(
+      useWideViewPort: true,
+      builtInZoomControls: true,
+      geolocationEnabled: true,
+      allowFileAccess: true,
+    ),
+    ios: IOSInAppWebViewOptions(
+      allowsInlineMediaPlayback: true,
+    ),
   );
 
   Future<bool> _onWillPop() async {
@@ -73,8 +79,10 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
             child: Scaffold(
               backgroundColor: Colors.white,
               body: InAppWebView(
-                initialSettings: settings,
-                initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
+                initialOptions: settings,
+                initialUrlRequest: URLRequest(
+                  url: Uri.parse(widget.initialUrl),
+                ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
 
@@ -137,7 +145,10 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                     // _isLoading = false;
                   });
                 },
-                onGeolocationPermissionsShowPrompt: (controller, origin) async {
+                androidOnGeolocationPermissionsShowPrompt: (
+                  controller,
+                  origin,
+                ) async {
                   // Ask runtime permission first (using permission_handler)
                   var status = await Permission.locationWhenInUse.status;
                   if (!status.isGranted) {
@@ -381,7 +392,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Enable GPS'),
-          content: const SingleChildScrollView(
+          content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
                 Text('Please enable GPS to continue using this feature.'),

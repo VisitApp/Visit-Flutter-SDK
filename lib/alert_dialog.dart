@@ -85,7 +85,7 @@ void showPermissionDialog(BuildContext context, String titleText,
             TextButton(
               onPressed: () => onNegativeButtonPress(),
               style: ButtonStyle(
-                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                overlayColor: MaterialStateProperty.all(Colors.transparent),
                 splashFactory: NoSplash.splashFactory,
               ),
               child: const Text(
