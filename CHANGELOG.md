@@ -1,3 +1,7 @@
+## 1.0.12
+
+- Added check for aws
+
 ## 1.0.11
 
 - Add pdf download within the app and share it via share-sheet.
