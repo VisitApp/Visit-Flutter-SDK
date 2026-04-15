@@ -317,7 +317,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
     String type = callbackResponse['type']!;
     String frequency = callbackResponse['frequency']!;
-    int timestamp = int.parse(callbackResponse['timestamp']!);
+    int timestamp = callbackResponse['timestamp']!;
 
     print("$TAG: type: $type, frequency: $frequency, timestamp: $timestamp");
 
