@@ -28,7 +28,6 @@ class VisitAndroidWebView extends StatefulWidget {
 
 class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   static const platform = MethodChannel('visit_flutter_sdk');
-  String _batteryLevel = 'Unknown battery level.';
 
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
@@ -129,8 +128,6 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         } else if (methodName == "OPEN_DAILER") {
                           int? phone = callbackResponse['number'];
                           _makePhoneCall(phone!);
-                        } else if (methodName == "BATTERY_STATUS") {
-                          _getBatteryLevel();
                         } else if (methodName == "GET_HEALTH_CONNECT_STATUS") {
                           _getHealthConnectStatus();
                         } else if (methodName == "CONNECT_TO_GOOGLE_FIT") {
@@ -188,12 +185,6 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
               // Align at 0.8 part of the screen height
               child: CircularProgressIndicator(color: Color(0xFFEC6625)),
             ),
-
-          Align(
-            alignment: Alignment(0.0, 0.7),
-            // Align at 0.8 part of the screen height
-            child: Text("Battery Level: $_batteryLevel"),
-          ),
         ],
       ),
     );
@@ -302,17 +293,20 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     int googleFitLastSync = int.parse(callbackResponse['googleFitLastSync']!);
     int gfHourlyLastSync = int.parse(callbackResponse['gfHourlyLastSync']!);
 
-    print("$TAG: apiBaseUrl: $apiBaseUrl, authtoken: $authtoken, googleFitLastSync: $googleFitLastSync, gfHourlyLastSync: $gfHourlyLastSync");
+    print(
+      "$TAG: apiBaseUrl: $apiBaseUrl, authtoken: $authtoken, googleFitLastSync: $googleFitLastSync, gfHourlyLastSync: $gfHourlyLastSync",
+    );
 
     String? syncMessage;
     try {
-      syncMessage = await platform.invokeMethod<String?>(
-        'updateApiBaseUrl',
-        {'apiBaseUrl': apiBaseUrl, 'authtoken': authtoken, 'googleFitLastSync': googleFitLastSync, 'gfHourlyLastSync': gfHourlyLastSync},
-      );
+      syncMessage = await platform.invokeMethod<String?>('updateApiBaseUrl', {
+        'apiBaseUrl': apiBaseUrl,
+        'authtoken': authtoken,
+        'googleFitLastSync': googleFitLastSync,
+        'gfHourlyLastSync': gfHourlyLastSync,
+      });
 
       print("$TAG: message: $syncMessage");
-
     } on PlatformException catch (e) {
       print("$TAG:Failed to get Health Connect Status: '${e.message}'.");
     }
@@ -348,21 +342,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     }
   }
 
-  Future<void> _getBatteryLevel() async {
-    String batteryLevel;
-    try {
-      final result = await platform.invokeMethod<int>('getBatteryLevel');
-      batteryLevel = 'Battery level at $result % .';
-    } on PlatformException catch (e) {
-      batteryLevel = "Failed to get battery level: '${e.message}'.";
-    }
-
-    setState(() {
-      _batteryLevel = batteryLevel;
-    });
-  }
-
-  Map<String, String> _buildHeaders(Uri uri, String? authToken) {
+  Map<String, String> _buildHeaders(String? authToken) {
     final token = authToken?.trim();
     final host = uri.host.toLowerCase();
     if (token == null || token.isEmpty || host.contains('amazonaws.com')) {
@@ -504,20 +484,23 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         permission == LocationPermission.always) {
       if (widget.isLoggingEnabled) {
         print(
-            '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+          '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
+        );
       }
 
       bool isGPSPermissionEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (widget.isLoggingEnabled) {
         print(
-            '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
+          '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled',
+        );
       }
 
       if (isGPSPermissionEnabled) {
         if (widget.isLoggingEnabled) {
           print(
-              '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
+            '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called',
+          );
         }
 
         String jsCode = "window.checkTheGpsPermission(true)";
@@ -536,13 +519,15 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
         if (widget.isLoggingEnabled) {
           print(
-              '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled');
+            '$TAG: checkForLocationAndGPSPermission isGPSPermissionEnabled : $isGPSPermissionEnabled',
+          );
         }
 
         if (isGPSPermissionEnabled) {
           if (widget.isLoggingEnabled) {
             print(
-                '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called');
+              '$TAG: checkForLocationAndGPSPermission "window.checkTheGpsPermission(true) called',
+            );
           }
 
           String jsCode = "window.checkTheGpsPermission(true)";
@@ -554,7 +539,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       } else {
         if (widget.isLoggingEnabled) {
           print(
-              '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+            '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
+          );
         }
 
         _showAndroidPermissionDialog();
