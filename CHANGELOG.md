@@ -1,3 +1,7 @@
+## 2.0.3
+- Compile issue fix
+
+
 ## 2.0.2
 
 - Removed `path_provider` and `share_plus` dependencies to avoid bundling iOS SDKs without privacy manifests on Flutter 3.7.0.

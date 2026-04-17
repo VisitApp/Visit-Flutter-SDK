@@ -1,6 +1,6 @@
 # Visit Flutter Plugin
 
-### Latest Version 2.0.2
+### Latest Version 2.0.3
 
 A Flutter plugin that provides WebView access with permissions for location, file read/write, and more.
 
