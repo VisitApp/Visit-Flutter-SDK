@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.bundling.Jar
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -23,19 +25,42 @@ if (flutterVersionName == null) {
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+
+Jar.metaClass.destinationDir = { File dir ->
+    delegate.destinationDirectory.set(dir)
+}
+Jar.metaClass.archiveName = { String name ->
+    delegate.archiveFileName.set(name)
+}
+
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
+afterEvaluate {
+    tasks.matching { task ->
+        task.name.startsWith("compress") && task.name.endsWith("Assets")
+    }.configureEach { task ->
+        def variantName = task.name.substring("compress".length(), task.name.length() - "Assets".length())
+        def copyFlutterAssetsTask = tasks.findByName("copyFlutterAssets${variantName}")
+        if (copyFlutterAssetsTask != null) {
+            task.dependsOn(copyFlutterAssetsTask)
+        }
+    }
+}
+
 android {
-    compileSdkVersion 34
-    ndkVersion flutter.ndkVersion
+    namespace "com.example.visit_flutter_sdk_example"
+    compileSdkVersion 36
+    ndkVersion "27.0.12077973"
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
         jvmTarget = '1.8'
+        freeCompilerArgs += ['-Xskip-metadata-version-check']
     }
 
     sourceSets {
@@ -63,4 +88,5 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }

@@ -27,6 +27,7 @@ class VisitAndroidWebView extends StatefulWidget {
 }
 
 class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
+  static const MethodChannel platform = MethodChannel('visit_flutter_sdk');
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
@@ -344,7 +345,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     }
   }
 
-  Map<String, String> _buildHeaders(String? authToken) {
+  Map<String, String> _buildHeaders(Uri uri, String? authToken) {
     final token = authToken?.trim();
     final host = uri.host.toLowerCase();
     if (token == null || token.isEmpty || host.contains('amazonaws.com')) {

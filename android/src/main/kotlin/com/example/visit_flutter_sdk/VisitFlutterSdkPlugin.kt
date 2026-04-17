@@ -1,6 +1,7 @@
 package com.example.visit_flutter_sdk
 
 import android.app.Activity
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
@@ -9,6 +10,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
+import androidx.core.content.FileProvider
 import androidx.health.connect.client.PermissionController
 import com.getvisitapp.google_fit.HealthConnectListener
 import com.getvisitapp.google_fit.data.VisitStepSyncHelper
@@ -32,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 
 /** VisitFlutterSdkPlugin */
 class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
@@ -372,11 +375,7 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             return
         }
 
-        val context = activity ?: applicationContext
-        if (context == null) {
-            result.error("no_context", "Unable to open share sheet without a context.", null)
-            return
-        }
+        val context = mainActivity ?: appContext
 
         val uri = try {
             getFileUri(context, file)
@@ -393,7 +392,7 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         }
 
         val chooserIntent = Intent.createChooser(shareIntent, null)
-        if (activity == null) {
+        if (mainActivity == null) {
             chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 

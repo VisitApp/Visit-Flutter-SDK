@@ -2,7 +2,7 @@ group = "com.example.visit_flutter_sdk"
 version = "1.0-SNAPSHOT"
 
 buildscript {
-    ext.kotlin_version = "2.1.0"
+    ext.kotlin_version = "2.2.20"
     repositories {
         google()
         mavenCentral()
@@ -20,6 +20,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url "https://jitpack.io" }
     }
 }
 
@@ -38,6 +39,7 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17
+        freeCompilerArgs += ["-Xskip-metadata-version-check"]
     }
 
     sourceSets {
@@ -50,11 +52,11 @@ android {
     }
 
     dependencies {
-        implementation("androidx.core:core:1.9.0")
+        implementation("androidx.core:core:1.17.0")
         testImplementation("org.jetbrains.kotlin:kotlin-test")
         testImplementation("org.mockito:mockito-core:5.0.0")
 
-        implementation "com.github.VisitApp:VisitAndroidSDK:v3.01-alpha"
+        implementation("com.github.VisitApp:VisitAndroidSDK:v3.01-alpha")
 
         implementation "org.jetbrains.kotlin:kotlin-stdlib:2.2.20"
         implementation 'androidx.core:core-ktx:1.17.0'
