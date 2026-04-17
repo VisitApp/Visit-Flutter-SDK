@@ -11,7 +11,16 @@ class MethodChannelVisitFlutterSdk extends VisitFlutterSdkPlatform {
 
   @override
   Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
+    final version =
+        await methodChannel.invokeMethod<String>('getPlatformVersion');
     return version;
+  }
+
+  @override
+  Future<void> shareFile(String filePath, {String? mimeType}) async {
+    await methodChannel.invokeMethod<void>('shareFile', {
+      'path': filePath,
+      if (mimeType != null) 'mimeType': mimeType,
+    });
   }
 }

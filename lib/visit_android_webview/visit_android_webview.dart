@@ -4,13 +4,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
+import '../visit_flutter_sdk_platform_interface.dart';
 
 class VisitAndroidWebView extends StatefulWidget {
   const VisitAndroidWebView({
@@ -82,7 +81,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
               body: InAppWebView(
                 initialOptions: options,
                 initialUrlRequest: URLRequest(
-                  url: Uri.parse(widget.initialUrl),
+                  url: WebUri(widget.initialUrl),
                 ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
@@ -106,10 +105,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         if (methodName == "GET_LOCATION_PERMISSIONS") {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
-                          final String? documentLink = callbackResponse['link']
-                              ?.toString();
-                          final String? authToken = callbackResponse['authToken']
-                              ?.toString();
+                          final String? documentLink =
+                          callbackResponse['link']?.toString();
+                          final String? authToken =
+                          callbackResponse['authToken']?.toString();
 
                           if (documentLink == null || documentLink.isEmpty) {
                             return;
@@ -143,10 +142,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     // _isLoading = false;
                   });
                 },
-                androidOnGeolocationPermissionsShowPrompt: (
-                  controller,
-                  origin,
-                ) async {
+                androidOnGeolocationPermissionsShowPrompt: (controller,
+                    origin,) async {
                   // Ask runtime permission first (using permission_handler)
                   var status = await Permission.locationWhenInUse.status;
                   if (!status.isGranted) {
@@ -185,9 +182,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   Map<String, String> _buildHeaders(Uri uri, String? authToken) {
     final token = authToken?.trim();
     final host = uri.host.toLowerCase();
-    if (token == null ||
-        token.isEmpty ||
-        host.contains('amazonaws.com')) {
+    if (token == null || token.isEmpty || host.contains('amazonaws.com')) {
       return const {};
     }
 
@@ -195,6 +190,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   }
 
   Future<void> _downloadFile({required String link, String? authToken}) async {
+    print("_downloadFile() called");
+
     if (_isDownloading) {
       return;
     }
@@ -228,9 +225,11 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         );
       }
 
-      final directory = await getApplicationDocumentsDirectory();
-      final filePath =
-          '${directory.path}/${_buildFileName(link, response.headers.contentType?.mimeType)}';
+      final mimeType = response.headers.contentType?.mimeType;
+      final directory = await Directory.systemTemp.createTemp(
+        'visit_flutter_sdk_',
+      );
+      final filePath = '${directory.path}/${_buildFileName(link, mimeType)}';
       final file = File(filePath);
 
       sink = file.openWrite();
@@ -239,9 +238,14 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       await sink.close();
       sink = null;
 
-      await _openShareSheet(filePath);
+      print("file downloaded successfully");
+
+      await _openShareSheet(filePath, mimeType: mimeType);
+
+      print("file downloaded successfully");
     } catch (error) {
       _showSnackBar('Failed to download file: $error');
+      print("error occured: $error");
     } finally {
       await sink?.close();
       client?.close(force: true);
@@ -286,15 +290,11 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     }
   }
 
-  Future<void> _openShareSheet(String filePath) async {
-    final box = context.findRenderObject() as RenderBox?;
-    final sharePositionOrigin = box == null
-        ? null
-        : box.localToGlobal(Offset.zero) & box.size;
-
-    await Share.shareXFiles([
-      XFile(filePath),
-    ], sharePositionOrigin: sharePositionOrigin);
+  Future<void> _openShareSheet(String filePath, {String? mimeType}) async {
+    await VisitFlutterSdkPlatform.instance.shareFile(
+      filePath,
+      mimeType: mimeType,
+    );
   }
 
   void _showSnackBar(String message) {
@@ -314,7 +314,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
 
     LocationPermission permission = await Geolocator.checkPermission();
 
-    print('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+    print(
+        '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
@@ -348,7 +349,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         bool isGPSPermissionEnabled =
-            await Geolocator.isLocationServiceEnabled();
+        await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
           print(

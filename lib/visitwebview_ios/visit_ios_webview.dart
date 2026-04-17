@@ -5,13 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
+import '../visit_flutter_sdk_platform_interface.dart';
 
 class VisitIosWebView extends StatefulWidget {
   const VisitIosWebView({
@@ -112,8 +111,8 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                         if (methodName == "GET_LOCATION_PERMISSIONS") {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
-                          final String? documentLink = callbackResponse['link']
-                              ?.toString();
+                          final String? documentLink =
+                              callbackResponse['link']?.toString();
                           final String? authToken =
                               callbackResponse['authToken']?.toString();
 
@@ -457,9 +456,11 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
         );
       }
 
-      final directory = await getApplicationDocumentsDirectory();
-      final filePath =
-          '${directory.path}/${_buildFileName(link, response.headers.contentType?.mimeType)}';
+      final mimeType = response.headers.contentType?.mimeType;
+      final directory = await Directory.systemTemp.createTemp(
+        'visit_flutter_sdk_',
+      );
+      final filePath = '${directory.path}/${_buildFileName(link, mimeType)}';
       final file = File(filePath);
 
       sink = file.openWrite();
@@ -468,7 +469,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       await sink.close();
       sink = null;
 
-      await _openShareSheet(filePath);
+      await _openShareSheet(filePath, mimeType: mimeType);
     } catch (error) {
       _showSnackBar('Failed to download file: $error');
     } finally {
@@ -515,15 +516,11 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     }
   }
 
-  Future<void> _openShareSheet(String filePath) async {
-    final box = context.findRenderObject() as RenderBox?;
-    final sharePositionOrigin = box == null
-        ? null
-        : box.localToGlobal(Offset.zero) & box.size;
-
-    await Share.shareXFiles([
-      XFile(filePath),
-    ], sharePositionOrigin: sharePositionOrigin);
+  Future<void> _openShareSheet(String filePath, {String? mimeType}) async {
+    await VisitFlutterSdkPlatform.instance.shareFile(
+      filePath,
+      mimeType: mimeType,
+    );
   }
 
   void _showSnackBar(String message) {
@@ -544,8 +541,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     LocationPermission permission = await Geolocator.checkPermission();
 
     print(
-      '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
-    );
+        '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
