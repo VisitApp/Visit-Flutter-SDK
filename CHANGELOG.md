@@ -1,3 +1,9 @@
+## 2.0.2
+
+- Removed `path_provider` and `share_plus` dependencies to avoid bundling iOS SDKs without privacy manifests on Flutter 3.7.0.
+- Added native file sharing through the plugin method channel.
+- Updated `flutter_inappwebview` to the Flutter 3.7-compatible federated package line for modern iOS builds.
+
 ## 2.0.1
 
 - Downgraded flutter dependencies for PLMI.
