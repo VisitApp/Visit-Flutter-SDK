@@ -53,10 +53,14 @@
     </dict>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>We need access to your photo library for uploading images.</string>
-    <key>NSCameraUsageDescription</key>
-    <string>We need access to your camera for scanning QR codes.</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>This app requires access to your location while in use.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera for scanning QR codes.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We use Apple Health data to show your steps, distance, calories, and sleep insights.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We request Apple Health access to sync your fitness information with Visit.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app requires access to your location while in use.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app requires access to your location even when not in use.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

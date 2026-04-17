@@ -40,12 +40,25 @@ Add the following permissions:
 <string>This app requires access to your location even when not in use.</string>
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>Your message explaining why the app needs location access.</string>
+<key>NSHealthShareUsageDescription</key>
+<string>We use Apple Health data to show your steps, distance, calories, and sleep insights.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>We request Apple Health access to sync your fitness information with Visit.</string>
 
 <key>LSApplicationQueriesSchemes</key>
 <array>
 	<string>tel</string>
 </array>
 ```
+
+Add the HealthKit entitlement to your iOS target as well:
+
+```
+<key>com.apple.developer.healthkit</key>
+<true/>
+```
+
+On iOS, the webview event `CONNECT_TO_GOOGLE_FIT` now triggers the Apple Health permission flow through the plugin. After access is granted, the plugin serves the same graph and daily fitness data callbacks used by the Android/web bridge.
 
 ### Android Setup
 

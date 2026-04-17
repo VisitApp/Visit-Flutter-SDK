@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
 
 class VisitIosWebView extends StatefulWidget {
@@ -26,6 +28,8 @@ class VisitIosWebView extends StatefulWidget {
 }
 
 class _VisitIosWebViewState extends State<VisitIosWebView> {
+  static const platform = MethodChannel('visit_flutter_sdk');
+
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
@@ -102,8 +106,8 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                         } else if (methodName == "DOWNLOAD_PDF") {
                           final String? documentLink = callbackResponse['link']
                               ?.toString();
-                          final String? authToken = callbackResponse['authToken']
-                              ?.toString();
+                          final String? authToken =
+                              callbackResponse['authToken']?.toString();
 
                           if (documentLink == null || documentLink.isEmpty) {
                             return;
@@ -119,6 +123,16 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                         } else if (methodName == "OPEN_DAILER") {
                           int? phone = callbackResponse['number'];
                           _makePhoneCall(phone!);
+                        } else if (methodName == "GET_HEALTH_CONNECT_STATUS") {
+                          _getHealthConnectStatus();
+                        } else if (methodName == "CONNECT_TO_GOOGLE_FIT") {
+                          _askForHealthConnectPermission();
+                        } else if (methodName == "UPDATE_PLATFORM") {
+                          _updatePlatform();
+                        } else if (methodName == "UPDATE_API_BASE_URL") {
+                          _updateApiBaseUrl(callbackResponse);
+                        } else if (methodName == "GET_DATA_TO_GENERATE_GRAPH") {
+                          _getDataToGenerateDetailedGraph(callbackResponse);
                         }
                       } catch (e) {
                         print("$TAG: args: $e");
@@ -172,12 +186,226 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     );
   }
 
+  Future<void> _getHealthConnectStatus() async {
+    if (widget.isLoggingEnabled) {
+      print("$TAG: _getHealthConnectStatus() called on iOS");
+    }
+
+    try {
+      final String? healthConnectStatus = await platform.invokeMethod<String?>(
+        'getHealthConnectStatus',
+      );
+
+      if (widget.isLoggingEnabled) {
+        print("$TAG: healthConnectStatus: $healthConnectStatus");
+      }
+
+      if (healthConnectStatus == 'CONNECTED') {
+        await _getDailyFitnessData();
+        return;
+      }
+
+      if (healthConnectStatus == 'NOT_INSTALLED') {
+        await _invokeWindowFunction('healthConnectNotInstall');
+      } else if (healthConnectStatus == 'INSTALLED') {
+        await _invokeWindowFunction('healthConnectAvailable');
+      } else {
+        await _notifyFitnessNotSupported();
+        return;
+      }
+
+      await _invokeWindowFunction('updateFitnessPermissions', [
+        'false',
+        '0',
+        '0',
+      ]);
+    } on MissingPluginException {
+      await _notifyFitnessNotSupported();
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        print("$TAG: Failed to get fitness status on iOS: '${e.message}'.");
+      }
+      await _notifyFitnessNotSupported();
+    }
+  }
+
+  Future<void> _getDailyFitnessData() async {
+    if (widget.isLoggingEnabled) {
+      print("$TAG: _getDailyFitnessData() called on iOS");
+    }
+
+    try {
+      final String? dailyFitnessData = await platform.invokeMethod<String?>(
+        'requestDailyFitnessData',
+      );
+
+      if (dailyFitnessData != null) {
+        await _webViewController.evaluateJavascript(source: dailyFitnessData);
+      }
+    } on MissingPluginException {
+      await _notifyFitnessNotSupported();
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        print("$TAG: Failed to get daily fitness data on iOS: '${e.message}'.");
+      }
+    }
+  }
+
+  Future<void> _askForHealthConnectPermission() async {
+    if (widget.isLoggingEnabled) {
+      print("$TAG: _askForHealthConnectPermission() called on iOS");
+    }
+
+    try {
+      final String? permissionStatus = await platform.invokeMethod<String?>(
+        'askForFitnessPermission',
+      );
+
+      if (permissionStatus == 'GRANTED') {
+        await _getHealthConnectStatus();
+        return;
+      } else if (permissionStatus == 'CANCELLED') {
+        _showHealthKitPermissionDeniedDialog();
+        return;
+      }
+    } on MissingPluginException {
+      // Fall back to the unsupported flow below.
+      print("$TAG: MissingPluginException");
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        print(
+          "$TAG: Failed to request fitness permission on iOS: '${e.message}'.",
+        );
+      }
+    }
+
+    await _notifyFitnessNotSupported();
+  }
+
+  void _showHealthKitPermissionDeniedDialog() {
+    showPermissionDialog(
+      context,
+      'Go to iPhone Settings to allow Apple Health access.',
+      onPositiveButtonPress: () {
+        Navigator.of(context).pop();
+        openAppSettings();
+      },
+      onNegativeButtonPress: () {
+        Navigator.of(context).pop();
+      },
+    );
+  }
+
+  Future<void> _updatePlatform() async {
+    await _webViewController.evaluateJavascript(
+      source: 'window.setSdkPlatform("IOS")',
+    );
+  }
+
+  Future<void> _updateApiBaseUrl(Map<String, dynamic> callbackResponse) async {
+    if (widget.isLoggingEnabled) {
+      print("$TAG: _updateApiBaseUrl() called on iOS");
+    }
+
+    try {
+      await platform.invokeMethod<String?>('updateApiBaseUrl', {
+        'apiBaseUrl': callbackResponse['apiBaseUrl']?.toString() ?? '',
+        'authtoken': callbackResponse['authtoken']?.toString() ?? '',
+        'googleFitLastSync': _parseIntValue(
+          callbackResponse['googleFitLastSync'],
+        ),
+        'gfHourlyLastSync': _parseIntValue(
+          callbackResponse['gfHourlyLastSync'],
+        ),
+      });
+    } on MissingPluginException {
+      if (widget.isLoggingEnabled) {
+        print("$TAG: updateApiBaseUrl is not implemented on iOS native side.");
+      }
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        print("$TAG: Failed to update API base URL on iOS: '${e.message}'.");
+      }
+    }
+  }
+
+  Future<void> _getDataToGenerateDetailedGraph(
+    Map<String, dynamic> callbackResponse,
+  ) async {
+    if (widget.isLoggingEnabled) {
+      print("$TAG: _getDataToGenerateDetailedGraph() called on iOS");
+    }
+
+    try {
+      final String? graphData = await platform
+          .invokeMethod<String?>('requestActivityDataFromHealthConnect', {
+            'type': callbackResponse['type']?.toString() ?? '',
+            'frequency': callbackResponse['frequency']?.toString() ?? '',
+            'timestamp': _parseIntValue(callbackResponse['timestamp']),
+          });
+
+      if (graphData != null) {
+        await _webViewController.evaluateJavascript(
+          source: 'window.$graphData',
+        );
+      }
+    } on MissingPluginException {
+      if (widget.isLoggingEnabled) {
+        print(
+          "$TAG: requestActivityDataFromHealthConnect is not implemented on iOS native side.",
+        );
+      }
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        print("$TAG: Failed to generate graph data on iOS: '${e.message}'.");
+      }
+    }
+  }
+
+  int _parseIntValue(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  Future<void> _invokeWindowFunction(
+    String functionName, [
+    List<String> arguments = const [],
+  ]) async {
+    final String joinedArguments = arguments.join(',');
+    final String invocation = joinedArguments.isEmpty
+        ? 'window.$functionName()'
+        : 'window.$functionName($joinedArguments)';
+
+    await _webViewController.evaluateJavascript(
+      source:
+          '''
+        if (typeof window.$functionName === 'function') {
+          $invocation;
+        }
+      ''',
+    );
+  }
+
+  Future<void> _notifyFitnessNotSupported() async {
+    await _invokeWindowFunction('healthConnectNotSupported');
+    await _invokeWindowFunction('updateFitnessPermissions', [
+      'false',
+      '0',
+      '0',
+    ]);
+  }
+
   Map<String, String> _buildHeaders(Uri uri, String? authToken) {
     final token = authToken?.trim();
     final host = uri.host.toLowerCase();
-    if (token == null ||
-        token.isEmpty ||
-        host.contains('amazonaws.com')) {
+    if (token == null || token.isEmpty || host.contains('amazonaws.com')) {
       return const {};
     }
 
@@ -304,7 +532,9 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
 
     LocationPermission permission = await Geolocator.checkPermission();
 
-    print('$TAG: checkForLocationAndGPSPermission permissionState : $permission');
+    print(
+      '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
+    );
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
