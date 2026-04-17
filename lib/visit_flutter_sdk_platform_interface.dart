@@ -26,4 +26,8 @@ abstract class VisitFlutterSdkPlatform extends PlatformInterface {
   Future<String?> getPlatformVersion() {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
+
+  Future<void> shareFile(String filePath, {String? mimeType}) {
+    throw UnimplementedError('shareFile() has not been implemented.');
+  }
 }

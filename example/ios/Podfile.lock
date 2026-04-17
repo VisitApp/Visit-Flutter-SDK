@@ -3,17 +3,16 @@ PODS:
   - flutter_inappwebview_ios (0.0.1):
     - Flutter
     - flutter_inappwebview_ios/Core (= 0.0.1)
-    - OrderedSet (~> 6.0.3)
+    - OrderedSet (~> 5.0)
   - flutter_inappwebview_ios/Core (0.0.1):
     - Flutter
-    - OrderedSet (~> 6.0.3)
+    - OrderedSet (~> 5.0)
   - geolocator_apple (1.2.0):
     - Flutter
-    - FlutterMacOS
   - integration_test (0.0.1):
     - Flutter
-  - OrderedSet (6.0.3)
-  - permission_handler_apple (9.3.0):
+  - OrderedSet (5.0.0)
+  - permission_handler_apple (9.1.1):
     - Flutter
   - url_launcher_ios (0.0.1):
     - Flutter
@@ -23,7 +22,7 @@ PODS:
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
-  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
+  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -39,7 +38,7 @@ EXTERNAL SOURCES:
   flutter_inappwebview_ios:
     :path: ".symlinks/plugins/flutter_inappwebview_ios/ios"
   geolocator_apple:
-    :path: ".symlinks/plugins/geolocator_apple/darwin"
+    :path: ".symlinks/plugins/geolocator_apple/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
   permission_handler_apple:
@@ -50,15 +49,15 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/visit_flutter_sdk/ios"
 
 SPEC CHECKSUMS:
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_inappwebview_ios: 6f63631e2c62a7c350263b13fa5427aedefe81d4
-  geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
-  integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
-  OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
-  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
-  visit_flutter_sdk: bdac5ee0affdfdf57ed886b50f26706f5a3b4cbd
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  flutter_inappwebview_ios: 97215cf7d4677db55df76782dbd2930c5e1c1ea0
+  geolocator_apple: 9bcea1918ff7f0062d98345d238ae12718acfbc1
+  integration_test: a1e7d09bd98eca2fc37aefd79d4f41ad37bdbbe5
+  OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
+  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
+  url_launcher_ios: 68d46cc9766d0c41dbdc884310529557e3cd7a86
+  visit_flutter_sdk: ccb8a2e04d107bfbd0909fa920f4a545f6e0b909
 
-PODFILE CHECKSUM: 4305caec6b40dde0ae97be1573c53de1882a07e5
+PODFILE CHECKSUM: e99479a16d53f4a9e6390afd80ff99cd90a7e89c
 
 COCOAPODS: 1.16.2

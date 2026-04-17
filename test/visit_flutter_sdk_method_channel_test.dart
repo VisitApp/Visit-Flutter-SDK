@@ -26,4 +26,23 @@ void main() {
   test('getPlatformVersion', () async {
     expect(await platform.getPlatformVersion(), '42');
   });
+
+  test('shareFile', () async {
+    MethodCall? capturedCall;
+    messenger.setMockMethodCallHandler(
+      channel,
+      (MethodCall methodCall) async {
+        capturedCall = methodCall;
+        return null;
+      },
+    );
+
+    await platform.shareFile('/tmp/document.pdf', mimeType: 'application/pdf');
+
+    expect(capturedCall?.method, 'shareFile');
+    expect(capturedCall?.arguments, {
+      'path': '/tmp/document.pdf',
+      'mimeType': 'application/pdf',
+    });
+  });
 }

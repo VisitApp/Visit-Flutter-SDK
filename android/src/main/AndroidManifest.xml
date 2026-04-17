@@ -1,3 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="com.example.visit_flutter_sdk">
+  <application>
+    <provider
+      android:name="com.example.visit_flutter_sdk.VisitFlutterSdkFileProvider"
+      android:authorities="${applicationId}.visit_flutter_sdk.fileprovider"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/visit_flutter_sdk_file_paths" />
+    </provider>
+  </application>
 </manifest>
