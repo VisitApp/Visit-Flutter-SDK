@@ -27,8 +27,6 @@ class VisitAndroidWebView extends StatefulWidget {
 }
 
 class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
-  static const platform = MethodChannel('visit_flutter_sdk');
-
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
@@ -84,7 +82,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
               body: InAppWebView(
                 initialOptions: options,
                 initialUrlRequest: URLRequest(
-                  url: WebUri(widget.initialUrl),
+                  url: Uri.parse(widget.initialUrl),
                 ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
@@ -96,9 +94,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                       try {
                         String jsonString = args[0];
 
-                        Map<String, dynamic> callbackResponse = jsonDecode(
-                          jsonString,
-                        );
+                        Map<String, dynamic> callbackResponse =
+                            jsonDecode(jsonString);
 
                         if (widget.isLoggingEnabled) {
                           print("$TAG: callbackResponse: $callbackResponse");
@@ -110,9 +107,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
                           final String? documentLink =
-                          callbackResponse['link']?.toString();
+                              callbackResponse['link']?.toString();
                           final String? authToken =
-                          callbackResponse['authToken']?.toString();
+                              callbackResponse['authToken']?.toString();
 
                           if (documentLink == null || documentLink.isEmpty) {
                             return;
@@ -156,8 +153,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     // _isLoading = false;
                   });
                 },
-                androidOnGeolocationPermissionsShowPrompt: (controller,
-                    origin,) async {
+                androidOnGeolocationPermissionsShowPrompt: (
+                  controller,
+                  origin,
+                ) async {
                   // Ask runtime permission first (using permission_handler)
                   var status = await Permission.locationWhenInUse.status;
                   if (!status.isGranted) {
@@ -180,11 +179,14 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
             ),
           ),
           if (_isLoading)
-            const Align(
+            const Center(
+                child: Align(
               alignment: Alignment(0.0, 0.7),
               // Align at 0.8 part of the screen height
-              child: CircularProgressIndicator(color: Color(0xFFEC6625)),
-            ),
+              child: CircularProgressIndicator(
+                color: Color(0xFFEC6625),
+              ),
+            )),
         ],
       ),
     );
@@ -515,7 +517,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
         bool isGPSPermissionEnabled =
-        await Geolocator.isLocationServiceEnabled();
+            await Geolocator.isLocationServiceEnabled();
 
         if (widget.isLoggingEnabled) {
           print(
