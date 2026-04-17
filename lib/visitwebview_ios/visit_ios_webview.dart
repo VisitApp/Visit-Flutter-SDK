@@ -80,7 +80,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
               body: InAppWebView(
                 initialOptions: settings,
                 initialUrlRequest: URLRequest(
-                  url: WebUri(widget.initialUrl),
+                  url: Uri.parse(widget.initialUrl),
                 ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
