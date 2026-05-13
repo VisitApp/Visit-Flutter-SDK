@@ -293,9 +293,13 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
   }
 
   void _showHealthKitPermissionDeniedDialog() {
-    showPermissionDialog(
+
+    return showPermissionDialog(
       context,
-      'Go to iPhone Settings to allow Apple Health access.',
+      titleText: 'Permission Denied',
+      descriptionText: 'Go to iPhone Settings to allow Apple Health access.',
+      positiveCTAText: "Open Setting",
+      negativeCTAText: "Cancel",
       onPositiveButtonPress: () {
         Navigator.of(context).pop();
         openAppSettings();
