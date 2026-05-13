@@ -48,3 +48,8 @@ example/android/gradle/wrapper/android.lock
 
 # Lock files generated locally
 example/pubspec.lock
+
+
+android/gradle/
+android/gradlew
+android/gradlew.bat
