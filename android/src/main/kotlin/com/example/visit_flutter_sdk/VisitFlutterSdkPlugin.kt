@@ -62,8 +62,6 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     private var healthConnectUtil: HealthConnectUtil? = null
     private var syncDataWithServer = false
 
-    private lateinit var visitSessionStorage: VisitSessionStorage
-
     lateinit var requestPermissions: ActivityResultLauncher<Set<String>>
 
 
@@ -145,7 +143,7 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         visitStepSyncHelper = VisitStepSyncHelper(mainActivity!!)
         healthConnectUtil = HealthConnectUtil(mainActivity!!, healthConnectListener)
         healthConnectUtil!!.initialize()
-        visitSessionStorage = VisitSessionStorage(mainActivity!!)
+
 
 
         requestPermissions = (mainActivity as ComponentActivity).registerForActivityResult(
@@ -323,11 +321,6 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 "GoogleFitPermissionModule syncDataWithServer(): baseUrl: " + apiBaseUrl + " authToken: " + authToken + " googleFitLastSync: " + googleFitLastSync + "  gfHourlyLastSync:" + gfHourlyLastSync
             )
         }
-
-        visitSessionStorage.saveBaseUrl("$apiBaseUrl/")
-        visitSessionStorage.saveVisitAuthToken(authToken)
-        visitSessionStorage.saveDailyLastSyncTimeStamp(googleFitLastSync)
-        visitSessionStorage.saveHourlyLastSyncTimeStamp(gfHourlyLastSync)
 
         if (!syncDataWithServer && healthConnectUtil != null) {
             Timber.d("mytag: syncDataWithServer() called")
