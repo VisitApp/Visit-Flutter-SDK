@@ -37,6 +37,37 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  inappwebview_user_script = File.join(
+    File.dirname(File.realpath(__FILE__)),
+    '.symlinks',
+    'plugins',
+    'flutter_inappwebview',
+    'ios',
+    'Classes',
+    'Types',
+    'UserScript.swift'
+  )
+  if File.exist?(inappwebview_user_script)
+    source = File.read(inappwebview_user_script)
+    source.gsub!(
+      /    @available\(iOS 14\.0, \*\)\n    lazy var contentWorld: WKContentWorld = WKContentWorld\.page/,
+      <<~SWIFT
+            private var contentWorldWrapper: Any?
+            @available(iOS 14.0, *)
+            var contentWorld: WKContentWorld {
+              get {
+                if let value = contentWorldWrapper as? WKContentWorld {
+                  return value
+                }
+                return .page
+              }
+              set { contentWorldWrapper = newValue }
+            }
+      SWIFT
+    )
+    File.write(inappwebview_user_script, source)
+  end
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
