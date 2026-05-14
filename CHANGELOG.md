@@ -1,3 +1,6 @@
+## 2.0.5
+- Added health connect functionality
+
 ## 2.0.4
 - Added health connect functionality
 
