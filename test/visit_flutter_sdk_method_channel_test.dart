@@ -5,7 +5,7 @@ import 'package:visit_flutter_sdk/visit_flutter_sdk_method_channel.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final messenger =
-      TestDefaultBinaryMessengerBinding.instance!.defaultBinaryMessenger;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   MethodChannelVisitFlutterSdk platform = MethodChannelVisitFlutterSdk();
   const MethodChannel channel = MethodChannel('visit_flutter_sdk');

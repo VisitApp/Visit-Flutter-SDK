@@ -83,7 +83,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
               body: InAppWebView(
                 initialOptions: options,
                 initialUrlRequest: URLRequest(
-                  url: Uri.parse(widget.initialUrl),
+                  url: WebUri(widget.initialUrl),
                 ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;

@@ -33,11 +33,18 @@ subprojects {
             }
         }
     }
+    project.afterEvaluate {
+        if (project.plugins.hasPlugin("com.android.library")) {
+            project.android {
+                compileSdkVersion 36
+            }
+        }
+    }
 }
 subprojects {
     project.evaluationDependsOn(':app')
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register("clean", Delete) {
+    delete rootProject.layout.buildDirectory
 }

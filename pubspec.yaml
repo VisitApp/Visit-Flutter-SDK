@@ -4,18 +4,18 @@ version: 2.0.5
 homepage:
 
 environment:
-  sdk: ">=2.19.0 <4.0.0"
-  flutter: ">=3.7.0"
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.9 <3.42.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_inappwebview: 5.4.3+7
+  flutter_inappwebview: 6.1.5
   flutter_svg: 2.0.5
   geolocator: 9.0.2
-  permission_handler: 10.2.0
+  permission_handler: 12.0.1
   plugin_platform_interface: ^2.0.2
-  url_launcher: ^6.1.11
+  url_launcher: 6.3.2
 
 dev_dependencies:
   flutter_test:
