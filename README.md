@@ -16,7 +16,7 @@ Add the following dependency in your `pubspec.yaml` file:
 dependencies:
   flutter:
     sdk: flutter
-  visit_flutter_sdk: ^2.0.2
+  visit_flutter_sdk: ^2.0.5
 ```
 
 ### iOS Setup
@@ -80,16 +80,21 @@ On iOS, the webview event `CONNECT_TO_GOOGLE_FIT` now triggers the Apple Health 
     </queries>
 ```
 
-2. Add this File Provider if already not present:
+2. The plugin declares its own file-share provider for downloaded files, and
+   Flutter should merge it into your app automatically. Do not add the old
+   `flutter_inappwebview_android` provider for Visit SDK downloads.
+
+   If your app has custom manifest merging and needs to declare the provider
+   manually, use the Visit SDK provider below:
 
 ```
         <provider
-            android:name="com.pichillilorenzo.flutter_inappwebview_android.InAppWebViewFileProvider"
-            android:authorities="${applicationId}.flutter_inappwebview_android.fileprovider"
+            android:name="com.example.visit_flutter_sdk.VisitFlutterSdkFileProvider"
+            android:authorities="${applicationId}.visit_flutter_sdk.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths" />
+                android:resource="@xml/visit_flutter_sdk_file_paths" />
         </provider>
 ```
