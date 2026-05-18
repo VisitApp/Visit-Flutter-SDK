@@ -1,3 +1,6 @@
+## 2.0.6
+- Updated SDK version to latest flutter version 3.41.9.
+
 ## 2.0.5
 - Added health connect functionality
 

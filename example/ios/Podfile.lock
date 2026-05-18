@@ -16,7 +16,7 @@ PODS:
     - Flutter
   - url_launcher_ios (0.0.1):
     - Flutter
-  - visit_flutter_sdk (0.0.1):
+  - visit_flutter_sdk (2.0.6):
     - Flutter
 
 DEPENDENCIES:
@@ -56,7 +56,7 @@ SPEC CHECKSUMS:
   OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   url_launcher_ios: bb13df5870e8c4234ca12609d04010a21be43dfa
-  visit_flutter_sdk: bf6bccaf38621766e433fa98b30276c9ba01c096
+  visit_flutter_sdk: d4364542899844d4ca7cb39c6ba5efbadeb71030
 
 PODFILE CHECKSUM: 9d646b0a22c85d7fb48538649d22a1fb688330f8
 
