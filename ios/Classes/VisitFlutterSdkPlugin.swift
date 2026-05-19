@@ -773,18 +773,7 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
   }
 
   private func currentBmrCaloriesPerHour() -> Int {
-    do {
-      switch try healthStore.biologicalSex().biologicalSex {
-      case .male:
-        return 1662 / 24
-      case .female:
-        return 1493 / 24
-      default:
-        return 1493 / 24
-      }
-    } catch {
-      return 1493 / 24
-    }
+    return 1493 / 24
   }
 
   private func sleepValueString(for value: Int) -> String {
@@ -1001,10 +990,6 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
       types.insert(sleepAnalysisType)
     }
 
-    if let biologicalSexType {
-      types.insert(biologicalSexType)
-    }
-
     if let distanceWalkingRunningType {
       types.insert(distanceWalkingRunningType)
     }
@@ -1018,10 +1003,6 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
 
   private var sleepAnalysisType: HKCategoryType? {
     HKObjectType.categoryType(forIdentifier: .sleepAnalysis)
-  }
-
-  private var biologicalSexType: HKCharacteristicType? {
-    HKObjectType.characteristicType(forIdentifier: .biologicalSex)
   }
 
   private var distanceWalkingRunningType: HKQuantityType? {
