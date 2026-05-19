@@ -1,3 +1,6 @@
+## 2.0.7
+- Updated SDK version to latest flutter version 3.41.9.
+
 ## 2.0.6
 - Updated SDK version to latest flutter version 3.41.9.
 
