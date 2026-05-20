@@ -21,6 +21,10 @@
         android:icon="@mipmap/ic_launcher"
         android:label="visit_flutter_sdk_example">
 
+        <meta-data
+            android:name="visit_flutter_sdk.health_connect_privacy_policy_url"
+            android:value="https://www.getvisitapp.com/privacy-policy" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.flutter_inappwebview_android.fileprovider"
