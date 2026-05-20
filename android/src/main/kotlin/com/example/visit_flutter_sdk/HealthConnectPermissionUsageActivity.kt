@@ -5,17 +5,34 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 class HealthConnectPermissionUsageActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_health_connect_permission_usage)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         val relativeLayout = RelativeLayout(this)
         val lp = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT
         )
         relativeLayout.layoutParams = lp
+        val initialPaddingLeft = relativeLayout.paddingLeft
+        val initialPaddingTop = relativeLayout.paddingTop
+        val initialPaddingRight = relativeLayout.paddingRight
+        val initialPaddingBottom = relativeLayout.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(relativeLayout) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(
+                initialPaddingLeft + systemBars.left,
+                initialPaddingTop + systemBars.top,
+                initialPaddingRight + systemBars.right,
+                initialPaddingBottom + systemBars.bottom
+            )
+            insets
+        }
 
         val mWebView = WebView(this)
         mWebView.layoutParams = ViewGroup.LayoutParams(

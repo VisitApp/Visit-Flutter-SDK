@@ -44,6 +44,7 @@
         <activity
             android:name="com.example.visit_flutter_sdk.HealthConnectPermissionUsageActivity"
             android:exported="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:targetActivity=".PermissionsRationaleActivity">
 
             <!-- For supported versions through Android 13, create an activity to show the rationale

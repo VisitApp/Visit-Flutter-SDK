@@ -23,7 +23,7 @@
 
         <meta-data
             android:name="visit_flutter_sdk.health_connect_privacy_policy_url"
-            android:value="https://www.getvisitapp.com/privacy-policy" />
+            android:value="https://www.google.com" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
