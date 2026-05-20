@@ -80,7 +80,21 @@ On iOS, the webview event `CONNECT_TO_GOOGLE_FIT` now triggers the Apple Health 
     </queries>
 ```
 
-2. The plugin declares its own file-share provider for downloaded files, and
+2. Add your company's privacy policy URL inside the app-level
+   `android/app/src/main/AndroidManifest.xml` file, under the `<application>`
+   tag. Android Health Connect uses this page when it shows the permission
+   usage/rationale screen.
+
+```
+        <meta-data
+            android:name="visit_flutter_sdk.health_connect_privacy_policy_url"
+            android:value="https://your-company.example.com/privacy-policy" />
+```
+
+   Replace the example value with your public privacy policy URL. The URL must
+   be a valid `https` or `http` URL.
+
+3. The plugin declares its own file-share provider for downloaded files, and
    Flutter should merge it into your app automatically. Do not add the old
    `flutter_inappwebview_android` provider for Visit SDK downloads.
 
