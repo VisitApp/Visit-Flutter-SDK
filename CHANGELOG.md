@@ -1,3 +1,6 @@
+## 2.0.8
+- Remove unnecessary permission in iOS SDK and handle insets for HealthConnectPermissionUsageActivity.
+
 ## 2.0.7
 - Updated SDK version to latest flutter version 3.41.9.
 
