@@ -1,3 +1,6 @@
+## 2.0.9
+- downgraded desugaring library
+
 ## 2.0.8
 - Remove unnecessary permission in iOS SDK and handle insets for HealthConnectPermissionUsageActivity.
 
