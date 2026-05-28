@@ -1,3 +1,6 @@
+## 2.0.10
+- removed okHttp library
+
 ## 2.0.9
 - downgraded desugaring library
 
