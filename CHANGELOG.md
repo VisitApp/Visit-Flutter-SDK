@@ -1,3 +1,7 @@
+## 3.0.0
+
+- Added compatibility with Flutter 3.35.4 and Dart 3.9.2 for HDFC.
+
 ## 1.0.12
 
 - Added check for aws

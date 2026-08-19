@@ -1,6 +1,6 @@
 # Visit Flutter Plugin
 
-### Latest Version 1.0.12
+### Latest Version 3.0.0
 
 A Flutter plugin that provides WebView access with permissions for location, file read/write, and more.
 
@@ -16,8 +16,20 @@ Add the following dependency in your `pubspec.yaml` file:
 dependencies:
   flutter:
     sdk: flutter
-  visit_flutter_sdk: ^1.0.11
+  visit_flutter_sdk: ^3.0.0
 ```
+
+### Compatibility
+
+Version 3.x targets Flutter 3.35.x (Dart 3.9.x) and the following dependency compatibility line:
+
+- `flutter_inappwebview: 6.1.5`
+- `flutter_svg: ^1.1.6`
+- `geolocator: ^13.0.4`
+- `permission_handler: ^11.1.0`
+- `url_launcher: ^6.1.8`
+
+This is a major-version compatibility release. Clients using earlier Flutter or third-party plugin versions should remain on the SDK major version that matches their dependency set.
 
 ### iOS Setup
 
