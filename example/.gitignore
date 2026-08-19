@@ -43,6 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/gradle/wrapper/android/
+/android/gradle/wrapper/caches/
+/android/gradle/wrapper/daemon/
+/android/gradle/wrapper/native/
+/android/gradle/wrapper/wrapper/
 
 # FVM Version Cache
 .fvm/

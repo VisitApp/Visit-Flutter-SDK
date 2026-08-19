@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:location/location.dart';
-import 'dart:async';
-import 'dart:io';
-import 'package:open_filex/open_filex.dart';
 
 import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
@@ -32,6 +31,33 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
   bool _isLoading = false;
+
+  static const _cameraAndMicrophoneDiagnostics = r'''
+    (async () => {
+      const tag = '[gUM-debug]';
+      try {
+        console.log(tag, 'location', location.href);
+        if (navigator.permissions?.query) {
+          const camera = await navigator.permissions
+              .query({ name: 'camera' })
+              .catch(() => ({ state: 'unknown' }));
+          const microphone = await navigator.permissions
+              .query({ name: 'microphone' })
+              .catch(() => ({ state: 'unknown' }));
+          console.log(tag, 'permissions', {
+            camera: camera.state,
+            microphone: microphone.state,
+          });
+        }
+        if (navigator.mediaDevices?.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          console.log(tag, 'devices', devices.map((device) => device.kind));
+        }
+      } catch (error) {
+        console.error(tag, 'probe failed', error);
+      }
+    })();
+  ''';
 
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
@@ -64,6 +90,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       geolocationEnabled: true,
       allowFileAccess: true,
       allowsInlineMediaPlayback: true,
+      mediaPlaybackRequiresUserGesture: false,
     );
 
     return ColoredSafeArea(
@@ -111,6 +138,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         } else if (methodName == "OPEN_DAILER") {
                           int? phone = callbackResponse['number'];
                           _makePhoneCall(phone!);
+                        } else if (methodName ==
+                            'GET_CAMERA_AND_MICROPHONE_PERMISSIONS') {
+                          _checkAndRequestCameraAndMicPermissions();
                         }
                       } catch (e) {
                         log("$TAG: args: $e");
@@ -118,16 +148,12 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     },
                   );
                 },
-                onLoadStart: (controller, url) {
-                  setState(() {
-                    print('Page started loading: $url');
-                    // _isLoading = true;
-                  });
-                },
-                onLoadStop: (controller, url) {
-                  setState(() {
-                    // _isLoading = false;
-                  });
+                onLoadStop: (controller, url) async {
+                  if (widget.isLoggingEnabled) {
+                    await controller.evaluateJavascript(
+                      source: _cameraAndMicrophoneDiagnostics,
+                    );
+                  }
                 },
                 onGeolocationPermissionsShowPrompt: (controller, origin) async {
                   // Ask runtime permission first (using permission_handler)
@@ -146,6 +172,15 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     origin: origin,
                     allow: allow,
                     retain: true, // remember this decision for this origin
+                  );
+                },
+                onPermissionRequest: (controller, permissionRequest) async {
+                  final granted = await _requestCameraAndMicPermissions();
+                  return PermissionResponse(
+                    resources: permissionRequest.resources,
+                    action: granted
+                        ? PermissionResponseAction.GRANT
+                        : PermissionResponseAction.DENY,
                   );
                 },
               ),
@@ -343,6 +378,50 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     _webViewController.evaluateJavascript(
       source: 'window.checkTheGpsPermission(true)',
     );
+  }
+
+  Future<void> _checkAndRequestCameraAndMicPermissions() async {
+    final granted = await _requestCameraAndMicPermissions();
+    await _webViewController.evaluateJavascript(
+      source:
+          'window.checkCameraAndMicPermission && '
+          'window.checkCameraAndMicPermission($granted)',
+    );
+  }
+
+  Future<bool> _requestCameraAndMicPermissions() async {
+    var cameraStatus = await Permission.camera.status;
+    var microphoneStatus = await Permission.microphone.status;
+
+    if (widget.isLoggingEnabled) {
+      log(
+        '$TAG: camera=$cameraStatus microphone=$microphoneStatus before request',
+      );
+    }
+
+    if (!cameraStatus.isGranted || !microphoneStatus.isGranted) {
+      final results = await [
+        Permission.camera,
+        Permission.microphone,
+      ].request();
+      cameraStatus = results[Permission.camera] ?? cameraStatus;
+      microphoneStatus = results[Permission.microphone] ?? microphoneStatus;
+    }
+
+    final granted = cameraStatus.isGranted && microphoneStatus.isGranted;
+    if (widget.isLoggingEnabled) {
+      log(
+        '$TAG: camera=$cameraStatus microphone=$microphoneStatus after request',
+      );
+    }
+
+    if (!granted &&
+        (cameraStatus.isPermanentlyDenied ||
+            microphoneStatus.isPermanentlyDenied)) {
+      _showAndroidPermissionDialog();
+    }
+
+    return granted;
   }
 
   _showEnableGPSDialog() async {

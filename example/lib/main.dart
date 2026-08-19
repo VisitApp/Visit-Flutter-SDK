@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
-import 'dart:async';
+import 'dart:convert';
+import 'dart:developer';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:visit_flutter_sdk/colored_safe_area_widget.dart';
 import 'package:visit_flutter_sdk/visit_flutter_sdk.dart';
 
 void main() {
@@ -17,66 +19,138 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// First Screen: URL Input and Button to Navigate
-class UrlInputScreen extends StatefulWidget {
+class UrlInputScreen extends StatelessWidget {
   const UrlInputScreen({super.key});
-
-  @override
-  _UrlInputScreenState createState() => _UrlInputScreenState();
-}
-
-class _UrlInputScreenState extends State<UrlInputScreen> {
-  final TextEditingController _urlController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Enter SSO URL")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                labelText: "Enter SSO URL",
-                border: OutlineInputBorder(),
-              ),
-              maxLines: null,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Get the URL from the TextField and navigate to the next page
-                String url = _urlController.text;
-                if (url.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VisitFlutterSdkScreen(ssoUrl: url),
-                    ),
-                  );
-                } else {
-                  // Show a warning if the URL is empty
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a URL')),
-                  );
-                }
-              },
-              child: const Text("Open"),
-            ),
-          ],
+      appBar: AppBar(title: const Text('HCL Tech App')),
+      body: const Padding(
+        padding: EdgeInsets.all(16),
+        child: FirstPageWebview(
+          initialUrl: 'https://angulardemo-nine.vercel.app/',
         ),
       ),
     );
   }
 }
 
-// Second Screen: VisitFlutterSdk
-class VisitFlutterSdkScreen extends StatelessWidget {
-  final String ssoUrl;
+class FirstPageWebview extends StatefulWidget {
+  const FirstPageWebview({
+    super.key,
+    required this.initialUrl,
+    this.isLoggingEnabled = false,
+  });
 
+  final String initialUrl;
+  final bool isLoggingEnabled;
+
+  @override
+  State<FirstPageWebview> createState() => _FirstPageWebviewState();
+}
+
+class _FirstPageWebviewState extends State<FirstPageWebview> {
+  InAppWebViewController? _webViewController;
+
+  Future<bool> _onWillPop() async {
+    final controller = _webViewController;
+    if (controller != null && await controller.canGoBack()) {
+      await controller.goBack();
+      return false;
+    }
+    return true;
+  }
+
+  void _openVisitSdk(String ssoLink) {
+    if (ssoLink.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a URL')));
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VisitFlutterSdkScreen(ssoUrl: ssoLink),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = InAppWebViewSettings(
+      javaScriptEnabled: true,
+      allowFileAccessFromFileURLs: true,
+      transparentBackground: true,
+      useWideViewPort: true,
+      builtInZoomControls: true,
+      geolocationEnabled: true,
+      allowFileAccess: true,
+      allowsInlineMediaPlayback: true,
+      mediaPlaybackRequiresUserGesture: false,
+    );
+
+    return ColoredSafeArea(
+      color: Colors.white,
+      child: WillPopScope(
+        onWillPop: _onWillPop,
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: InAppWebView(
+            initialSettings: settings,
+            initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
+            onWebViewCreated: (controller) {
+              _webViewController = controller;
+              controller.addJavaScriptHandler(
+                handlerName: 'FlutterWebView',
+                callback: (args) {
+                  try {
+                    if (args.isEmpty || args.first is! String) {
+                      return;
+                    }
+
+                    final callbackResponse =
+                        jsonDecode(args.first as String)
+                            as Map<String, dynamic>;
+                    if (widget.isLoggingEnabled) {
+                      log('HCL callback: $callbackResponse');
+                    }
+
+                    if (callbackResponse['name'] == 'OPEN_VISIT_APP') {
+                      _openVisitSdk(
+                        callbackResponse['ssoLink'] as String? ?? '',
+                      );
+                    }
+                  } catch (error, stackTrace) {
+                    log(
+                      'Unable to handle HCL callback',
+                      error: error,
+                      stackTrace: stackTrace,
+                    );
+                  }
+                },
+              );
+            },
+            onGeolocationPermissionsShowPrompt: (controller, origin) async {
+              return GeolocationPermissionShowPromptResponse(
+                origin: origin,
+                allow: true,
+                retain: true,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VisitFlutterSdkScreen extends StatelessWidget {
   const VisitFlutterSdkScreen({super.key, required this.ssoUrl});
+
+  final String ssoUrl;
 
   @override
   Widget build(BuildContext context) {
