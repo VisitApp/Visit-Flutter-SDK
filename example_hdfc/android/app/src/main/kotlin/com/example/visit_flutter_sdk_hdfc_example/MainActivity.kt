@@ -1,5 +1,0 @@
-package com.example.visit_flutter_sdk_hdfc_example
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()

@@ -1,16 +1,12 @@
-# visit_flutter_sdk_example
+# Visit Flutter SDK example
 
-Demonstrates how to use the visit_flutter_sdk plugin.
+This app verifies `visit_flutter_sdk` against Flutter 3.35.4 and the
+supported dependency compatibility line. It uses the plugin from the parent
+directory.
 
-## Getting Started
+Run it with:
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```sh
+fvm flutter pub get
+fvm flutter run
+```
