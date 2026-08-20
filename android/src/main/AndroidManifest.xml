@@ -1,3 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="com.example.visit_flutter_sdk">
+  <application>
+    <!--
+      Required by flutter_inappwebview for HTML file inputs that capture an
+      image, video, or audio. Library manifests are merged into the consuming
+      application's manifest, so SDK consumers do not need to declare this.
+    -->
+    <provider
+      android:name="com.pichillilorenzo.flutter_inappwebview_android.InAppWebViewFileProvider"
+      android:authorities="${applicationId}.flutter_inappwebview_android.fileprovider"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/visit_flutter_sdk_provider_paths" />
+    </provider>
+  </application>
 </manifest>

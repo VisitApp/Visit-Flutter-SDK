@@ -79,16 +79,17 @@ Add the following permissions:
     </queries>
 ```
 
-2. Add this File Provider if already not present:
+2. No FileProvider configuration is required. The SDK supplies the current
+   InAppWebView FileProvider through Android manifest merging.
 
-```
-        <provider
-            android:name="com.pichillilorenzo.flutter_inappwebview.InAppWebViewFileProvider"
-            android:authorities="${applicationId}.flutter_inappwebview.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths" />
-        </provider>
-```
+### HTML camera and file capture
+
+The bundled FileProvider enables Android HTML file inputs that capture images,
+video, or audio (for example, `<input type="file" capture>`). If your hosted
+web content uses those features, declare the applicable camera and microphone
+permissions in your app and request them at runtime.
+
+Do not add another provider using the
+`${applicationId}.flutter_inappwebview_android.fileprovider` authority solely
+for this SDK. If your application separately configures InAppWebView with that
+same authority, keep a single provider declaration in the merged manifest.
