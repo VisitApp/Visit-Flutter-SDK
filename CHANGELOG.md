@@ -1,3 +1,7 @@
+## 2.0.11
+- Prevent duplicate Android Health Connect callbacks from issuing repeated JavaScript updates.
+- Resolve overlapping dashboard and graph requests independently with Visit Android SDK `v3.4.1`.
+
 ## 2.0.10
 - removed okHttp library
 
