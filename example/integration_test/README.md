@@ -4,10 +4,8 @@ The fixture uses the production `VisitAndroidWebView`, a loopback HTML page, and
 not require an SSO URL or sync health records to a server. Run it on an emulator
 with Health Connect available.
 
-First publish `com.getvisitapp:visit:3.3-concurrency-local` from the native SDK
-checkout with `./gradlew :visit:publishReleasePublicationToMavenLocal`.
-The example consumes that published artifact. Its debug manifest allows the
-fixture's loopback HTTP server; release application settings are unaffected.
+The example resolves its native SDK from JitPack. Its debug manifest allows the
+fixture's loopback HTTP server.
 
 From `example/`, after granting the example app's six requested Health Connect
 permissions:
