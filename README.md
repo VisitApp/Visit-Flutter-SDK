@@ -6,6 +6,23 @@ A Flutter plugin that provides WebView access with permissions for location, fil
 
 ## Getting Started
 
+### Local Android SDK development
+
+This branch currently requires the locally published native dependency
+`com.getvisitapp:visit:3.3-concurrency-local`. Before building the Flutter example,
+publish the release artifact from the separate native SDK checkout:
+
+```sh
+cd /path/to/VisitAndroidSDK
+./gradlew :visit:publishReleasePublicationToMavenLocal
+```
+
+Then run `fvm flutter pub get` in this Flutter repository and build from `example/`
+with `fvm flutter build apk --debug`. Republish after changing native SDK code.
+The plugin resolves only `com.getvisitapp:visit` from Maven Local and consumes its
+published AAR and dependency metadata. A public SDK release and switch back to
+JitPack coordinates will be handled separately.
+
 This plugin allows you to easily embed a WebView in your Flutter application while managing permissions for location access and file operations.
 
 ### Installation

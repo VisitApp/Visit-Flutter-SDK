@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
-import android.os.BatteryManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -17,11 +16,6 @@ import com.getvisitapp.google_fit.data.VisitStepSyncHelper
 import com.getvisitapp.google_fit.healthConnect.activity.HealthConnectUtil
 import com.getvisitapp.google_fit.healthConnect.contants.Contants.previouslyRevoked
 import com.getvisitapp.google_fit.healthConnect.enums.HealthConnectConnectionState
-import com.getvisitapp.google_fit.healthConnect.enums.HealthConnectConnectionState.CONNECTED
-import com.getvisitapp.google_fit.healthConnect.enums.HealthConnectConnectionState.INSTALLED
-import com.getvisitapp.google_fit.healthConnect.enums.HealthConnectConnectionState.NONE
-import com.getvisitapp.google_fit.healthConnect.enums.HealthConnectConnectionState.NOT_INSTALLED
-import com.getvisitapp.google_fit.healthConnect.enums.HealthConnectConnectionState.NOT_SUPPORTED
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -29,280 +23,226 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
+import java.io.File
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
-import java.io.File
 
-/** VisitFlutterSdkPlugin */
-class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
-    ActivityResultListener {
-
+/** Each activity attachment owns its requests and permission launcher. */
+class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     val TAG = "mytag"
-
-    /// The MethodChannel that will the communication between Flutter and native Android
-    ///
-    /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-    /// when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
     private lateinit var appContext: Context
     private var mainActivity: Activity? = null
-
-
-    private var promise: Result? = null
-    private var healthConnectStatusPromise: Result? = null
-    private var dataRetrivalPromise: Result? = null
-
-    private var isLoggingEnabled =
-        true //Todo: figure out to make it configurable dynamically, that i can pass as parameter.
-
+    private var requestScope: CoroutineScope? = null
+    private var pendingPermission: Deferred<Boolean>? = null
+    private var attachmentGeneration = 0L
+    private var permissionLauncher: ActivityResultLauncher<Set<String>>? = null
     private var visitStepSyncHelper: VisitStepSyncHelper? = null
     private var healthConnectUtil: HealthConnectUtil? = null
     private var syncDataWithServer = false
-
-    lateinit var requestPermissions: ActivityResultLauncher<Set<String>>
-
+    private var isLoggingEnabled = true
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     private val healthConnectListener = object : HealthConnectListener {
-        override fun loadVisitWebViewGraphData(webString: String) {
-            Timber.tag(TAG).d("webString: $webString")
-
-            Handler(Looper.getMainLooper()).post {
-                if (isLoggingEnabled) {
-                    Timber.tag(TAG).d("mytag: loadVisitWebViewGraphData: $webString")
-                }
-                dataRetrivalPromise?.success(webString)
-            }
-        }
-
+        // Data and permissions are completed by their owning coroutine, never by this listener.
+        override fun loadVisitWebViewGraphData(webString: String) = Unit
+        override fun userAcceptedHealthConnectPermission() = Unit
+        override fun userDeniedHealthConnectPermission() = Unit
+        override fun requestPermission() = Unit
+        override fun updateHealthConnectConnectionStatus(status: HealthConnectConnectionState, text: String) = Unit
         override fun logHealthConnectError(throwable: Throwable) {
-            throwable.printStackTrace()
-        }
-
-        override fun requestPermission() {
-            Timber.tag(TAG).d("requestPermission called 218")
-            requestPermissions.launch(healthConnectUtil!!.PERMISSIONS)
-        }
-
-        override fun updateHealthConnectConnectionStatus(
-            healthConnectConnectionState: HealthConnectConnectionState, s: String
-        ) {
-            Timber.tag(TAG)
-                .d("updateHealthConnectConnectionStatus: %s", healthConnectConnectionState)
-            when (healthConnectConnectionState) {
-                CONNECTED -> {}
-                NOT_SUPPORTED -> {}
-                NOT_INSTALLED -> {}
-                INSTALLED -> {}
-                NONE -> {}
-            }
-        }
-
-        override fun userAcceptedHealthConnectPermission() {
-            Timber.tag(TAG).d("userAcceptedHealthConnectPermission")
-            promise?.success("GRANTED")
-        }
-
-        override fun userDeniedHealthConnectPermission() {
-            Timber.tag(TAG).d("userDeniedHealthConnectPermission")
-            promise?.success(
-                "CANCELLED"
-            )
+            Timber.tag(TAG).e(throwable, "Health Connect initialization failed")
         }
     }
 
-
-    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Timber.tag(TAG).d("onAttachedToEngine() called")
-        appContext = flutterPluginBinding.applicationContext
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "visit_flutter_sdk")
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        appContext = binding.applicationContext
+        channel = MethodChannel(binding.binaryMessenger, "visit_flutter_sdk")
         channel.setMethodCallHandler(this)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        Timber.tag(TAG).d("onDetachedFromEngine() called")
+        detachActivity()
         channel.setMethodCallHandler(null)
     }
 
-    // ActivityAware hooks
-    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        Timber.tag(TAG).d("onAttachedToActivity() called")
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) = attachActivity(binding)
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) = attachActivity(binding)
+    override fun onDetachedFromActivity() = detachActivity()
+    override fun onDetachedFromActivityForConfigChanges() = detachActivity()
 
+    private fun attachActivity(binding: ActivityPluginBinding) {
+        detachActivity()
         mainActivity = binding.activity
-        binding.addActivityResultListener(this)
+        val util = HealthConnectUtil(binding.activity, healthConnectListener)
+        healthConnectUtil = util
+        visitStepSyncHelper = VisitStepSyncHelper(binding.activity)
+        requestScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        util.initialize()
+    }
 
-        val requestPermissionActivityContract =
-            PermissionController.createRequestPermissionResultContract()
+    private fun detachActivity() {
+        attachmentGeneration++
+        healthConnectUtil?.cancelPendingGraphRequests()
+        requestScope?.cancel()
+        requestScope = null
+        pendingPermission = null
+        permissionLauncher?.unregister()
+        permissionLauncher = null
+        healthConnectUtil?.scope?.cancel()
+        healthConnectUtil = null
+        visitStepSyncHelper = null
+        mainActivity = null
+    }
 
-        //don't initialise the native module if the mainActivity instance is null.
-        if (mainActivity == null) {
-            return
-        }
-        visitStepSyncHelper = VisitStepSyncHelper(mainActivity!!)
-        healthConnectUtil = HealthConnectUtil(mainActivity!!, healthConnectListener)
-        healthConnectUtil!!.initialize()
-
-
-
-        requestPermissions = (mainActivity as ComponentActivity).registerForActivityResult(
-            requestPermissionActivityContract
-        ) { granted: Set<String>? ->
-            Timber.tag(TAG).d("requestPermissions registerForActivityResult: %s", granted)
-            Timber.tag(TAG).d("onActivityResultImplementation execute: result: %s", granted)
-
-            granted?.let {
-                if (granted.containsAll(healthConnectUtil!!.PERMISSIONS)) {
-                    previouslyRevoked = false
-
-
-                    Timber.tag(TAG).d("Permissions successfully granted")
-                    healthConnectUtil!!.checkPermissionsAndRunForStar(true)
-                } else {
-                    Timber.tag(TAG).d("Lack of required permissions")
-                    healthConnectUtil!!.checkPermissionsAndRunForStar(true)
+    private suspend fun requestFitnessPermission(util: HealthConnectUtil): Boolean {
+        val activity = mainActivity as? ComponentActivity
+            ?: throw HealthRequestException("activity_unavailable", "A ComponentActivity is required for Health Connect permissions.")
+        val generation = attachmentGeneration
+        return suspendCancellableCoroutine { continuation ->
+            val completed = AtomicBoolean(false)
+            lateinit var launcher: ActivityResultLauncher<Set<String>>
+            fun unregister() {
+                launcher.unregister()
+                if (permissionLauncher === launcher) permissionLauncher = null
+            }
+            launcher = activity.activityResultRegistry.register(
+                "visit_flutter_sdk.health_permission.${UUID.randomUUID()}",
+                PermissionController.createRequestPermissionResultContract(),
+            ) { granted ->
+                if (generation == attachmentGeneration && completed.compareAndSet(false, true)) {
+                    unregister()
+                    val accepted = granted.containsAll(util.PERMISSIONS)
+                    if (accepted) previouslyRevoked = false
+                    continuation.resume(accepted)
                 }
-
+            }
+            permissionLauncher = launcher
+            continuation.invokeOnCancellation {
+                if (completed.compareAndSet(false, true)) mainHandler.post { unregister() }
+            }
+            try {
+                launcher.launch(util.PERMISSIONS)
+            } catch (error: Exception) {
+                if (completed.compareAndSet(false, true)) {
+                    unregister()
+                    continuation.resumeWithException(error)
+                }
             }
         }
-
     }
-
-    override fun onDetachedFromActivity() {
-        Timber.tag(TAG).d("onDetachedFromActivity() called")
-
-        mainActivity = null
-    }
-
-    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        Timber.tag(TAG).d("onReattachedToActivityForConfigChanges() called")
-
-        mainActivity = binding.activity
-    }
-
-    override fun onDetachedFromActivityForConfigChanges() {
-        Timber.tag(TAG).d("onDetachedFromActivityForConfigChanges() called")
-
-        mainActivity = null
-    }
-
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        call.arguments
-        if (call.method == "getPlatformVersion") {
-            result.success("Android ${android.os.Build.VERSION.RELEASE}")
-        } else if(call.method == "shareFile"){
-            shareFile(call, result)
-        } else if (call.method == "getHealthConnectStatus") {
-            getHealthConnectStatus(result)
-        } else if (call.method == "askForFitnessPermission") {
-            askForFitnessPermission(result)
-        } else if (call.method == "requestDailyFitnessData") {
-            requestDailyFitnessData(result)
-        } else if (call.method == "openHealthConnectApp") {
-            openHealthConnectApp(result)
-        } else if (call.method == "requestActivityDataFromHealthConnect") {
-            requestActivityDataFromHealthConnect(call, result)
-        } else if (call.method == "updateApiBaseUrl") {
-            updateApiBaseUrl(call, result)
-        } else {
-            result.notImplemented()
-        }
-    }
-
-
-    fun getHealthConnectStatus(healthConnectStatusPromise: Result) {
-        this.healthConnectStatusPromise = healthConnectStatusPromise
-
-        Timber.tag(TAG).d("mytag: getHealthConnectStatus called")
-
-        healthConnectUtil?.scope?.launch {
-            val status: HealthConnectConnectionState = healthConnectUtil!!.checkAvailability()
-
-            withContext(Dispatchers.Main) {
-                when (status) {
-                    NOT_SUPPORTED -> {
-                        healthConnectStatusPromise.success("NOT_SUPPORTED")
-                    }
-
-                    NOT_INSTALLED -> {
-                        healthConnectStatusPromise.success("NOT_INSTALLED")
-                    }
-
-                    INSTALLED -> {
-                        healthConnectStatusPromise.success("INSTALLED")
-                    }
-
-                    CONNECTED -> {
-                        healthConnectStatusPromise.success("CONNECTED")
-                    }
-
-                    NONE -> {
-                        healthConnectStatusPromise.success("NONE")
+        try {
+            when (call.method) {
+                "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
+                "shareFile" -> shareFile(call, result)
+                "getHealthConnectStatus" -> healthRequest(result) { status(it).name }
+                "askForFitnessPermission" -> healthRequest(result) {
+                    if (ensurePermission(it)) "GRANTED" else "CANCELLED"
+                }
+                "requestDailyFitnessData" -> healthRequest(result) {
+                    requirePermission(it)
+                    it.getDashboardData()
+                }
+                "requestActivityDataFromHealthConnect" -> {
+                    val type = requireNotNull(call.argument<String>("type")) { "Missing graph type." }
+                    val frequency = requireNotNull(call.argument<String>("frequency")) { "Missing graph frequency." }
+                    val timestamp = requireNotNull(integerArgument(call.argument<Any>("timestamp"))) { "Expected integer timestamp." }
+                    healthRequest(result) {
+                        requirePermission(it)
+                        it.getGraphData(type, frequency, timestamp)
                     }
                 }
+                "openHealthConnectApp" -> {
+                    val util = healthConnectUtil
+                        ?: throw HealthRequestException("activity_unavailable", "No activity is attached.")
+                    util.openHealthConnectApp()
+                    result.success(null)
+                }
+                "updateApiBaseUrl" -> updateApiBaseUrl(call, result)
+                else -> result.notImplemented()
+            }
+        } catch (error: Exception) {
+            replyError(result, error)
+        }
+    }
+
+    // Each invocation captures its own Result. SDK suspend functions return once;
+    // no listener can complete a method-channel reply or replace another caller.
+    private fun healthRequest(result: Result, read: suspend (HealthConnectUtil) -> Any?) {
+        val util = healthConnectUtil
+        val scope = requestScope
+        if (util == null || scope == null) {
+            result.error("activity_unavailable", "No activity is attached.", null)
+            return
+        }
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            val response = runCatching { read(util) }
+            response.fold(result::success) { replyError(result, it) }
+        }
+    }
+
+    private fun replyError(result: Result, error: Throwable) {
+        when (error) {
+            is HealthRequestException -> result.error(error.code, error.message, error.details)
+            is TimeoutCancellationException -> result.error("health_connect_timeout", "Health Connect timed out.", null)
+            is CancellationException -> result.error("activity_detached", "The activity was detached.", null)
+            is IllegalArgumentException -> result.error("invalid_arguments", error.message, null)
+            else -> result.error("health_connect_error", "Unable to complete the native request.", null)
+        }
+    }
+
+    private suspend fun status(util: HealthConnectUtil): HealthConnectConnectionState =
+        withTimeout(30_000) { withContext(Dispatchers.IO) { util.checkAvailability() } }
+
+    private suspend fun requirePermission(util: HealthConnectUtil) {
+        if (!ensurePermission(util)) {
+            throw HealthRequestException("permission_denied", "Health Connect permission was denied.")
+        }
+    }
+
+    private suspend fun ensurePermission(util: HealthConnectUtil): Boolean {
+        pendingPermission?.takeUnless { it.isCompleted }?.let { return it.await() }
+        val scope = requestScope
+            ?: throw HealthRequestException("activity_detached", "The activity was detached.")
+        val flight = scope.async(start = CoroutineStart.LAZY) {
+            when (val state = status(util)) {
+                HealthConnectConnectionState.CONNECTED -> true
+                HealthConnectConnectionState.INSTALLED ->
+                    requestFitnessPermission(util) && status(util) == HealthConnectConnectionState.CONNECTED
+                else -> throw HealthRequestException("health_connect_unavailable", "Health Connect is unavailable.", state.name)
             }
         }
+        pendingPermission = flight
+        flight.invokeOnCompletion { if (pendingPermission === flight) pendingPermission = null }
+        flight.start()
+        return flight.await()
     }
 
+    private class HealthRequestException(val code: String, message: String, val details: Any? = null) : Exception(message)
 
-    fun requestDailyFitnessData(promise: Result) {
-        this.dataRetrivalPromise = promise
-
-        if (healthConnectUtil!!.healthConnectConnectionState == CONNECTED) {
-            healthConnectUtil!!.getVisitDashboardGraph()
-        }
+    private fun integerArgument(value: Any?): Long? = when (value) {
+        is Int -> value.toLong()
+        is Long -> value
+        else -> null
     }
-
-
-    fun askForFitnessPermission(promise: Result) {
-        this.promise = promise
-        healthConnectUtil?.let {
-            if (healthConnectUtil!!.healthConnectConnectionState == CONNECTED) {
-                Timber.tag(TAG).d("askForFitnessPermission: already granted")
-                promise.success("GRANTED")
-            } else {
-                Timber.tag(TAG).d("askForFitnessPermission: request permission")
-                healthConnectUtil!!.requestPermission()
-            }
-        }
-
-    }
-
-    fun openHealthConnectApp(promise: Result?) {
-        this.promise = promise
-        healthConnectUtil?.openHealthConnectApp();
-    }
-
-    fun requestActivityDataFromHealthConnect(
-        call: MethodCall, promise: Result
-    ) {
-
-        // Retrieve arguments safely
-        val type: String? = call.argument<String>("type")
-        val frequency: String? = call.argument<String>("frequency")
-        val timestamp: Long = call.argument<Long>("timestamp")!!
-
-
-
-        Timber.tag(TAG).d("Received type=$type, frequency=$frequency, timestamp=$timestamp")
-
-        this.dataRetrivalPromise = promise
-
-        healthConnectUtil?.let {
-            if (healthConnectUtil!!.healthConnectConnectionState == HealthConnectConnectionState.CONNECTED) {
-                // Example usage
-                Timber.tag(TAG).d("requesting data")
-
-                healthConnectUtil!!.getActivityData(type, frequency, timestamp)
-            } else {
-                Timber.tag(TAG).d("Permission not available, requesting again.")
-                healthConnectUtil!!.requestPermission()
-            }
-        }
-    }
-
 
     private fun updateApiBaseUrl(
         call: MethodCall,
@@ -310,8 +250,10 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     ) {
         val apiBaseUrl: String = call.argument<String>("apiBaseUrl")!!
         val authToken: String = call.argument<String>("authtoken")!!
-        val googleFitLastSync: Long = call.argument<Long>("googleFitLastSync")!!
-        val gfHourlyLastSync: Long = call.argument<Long>("gfHourlyLastSync")!!
+        val googleFitLastSync: Long = integerArgument(call.argument<Any>("googleFitLastSync"))
+            ?: throw HealthRequestException("invalid_arguments", "Expected integer googleFitLastSync.")
+        val gfHourlyLastSync: Long = integerArgument(call.argument<Any>("gfHourlyLastSync"))
+            ?: throw HealthRequestException("invalid_arguments", "Expected integer gfHourlyLastSync.")
 
 
 
@@ -339,21 +281,6 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     }
 
-
-    private fun getBatteryLevel(): Int {
-        val batteryLevel: Int
-        val batteryManager = appContext.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-        batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-
-        return batteryLevel
-    }
-
-
-    override fun onActivityResult(
-        requestCode: Int, resultCode: Int, data: Intent?
-    ): Boolean {
-        return false
-    }
 
     private fun shareFile(call: MethodCall, result: Result) {
         val filePath = call.argument<String>("path")

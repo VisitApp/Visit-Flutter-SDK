@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-void showPermissionDialog(
+Future<void> showPermissionDialog(
   BuildContext context, {
   required String titleText,
   required String descriptionText,
@@ -10,7 +10,7 @@ void showPermissionDialog(
   required VoidCallback onPositiveButtonPress,
   required VoidCallback onNegativeButtonPress,
 }) {
-  showDialog(
+  return showDialog<void>(
     context: context,
     builder: (_) => AlertDialog(
       backgroundColor: Colors.white,

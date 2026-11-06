@@ -292,7 +292,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     await _notifyFitnessNotSupported();
   }
 
-  void _showHealthKitPermissionDeniedDialog() {
+  Future<void> _showHealthKitPermissionDeniedDialog() {
 
     return showPermissionDialog(
       context,

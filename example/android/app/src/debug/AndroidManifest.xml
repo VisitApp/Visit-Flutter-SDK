@@ -4,4 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Allows the emulator integration fixture's in-app loopback HTTP server. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
