@@ -28,20 +28,19 @@ class VisitAndroidWebView extends StatefulWidget {
 }
 
 class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
-  static const platform = MethodChannel('visit_flutter_sdk');
+  static const MethodChannel platform = MethodChannel('visit_flutter_sdk');
   final _healthCalls = HealthCallGuard();
   bool _healthDialogVisible = false;
+  late InAppWebViewController _webViewController;
+  String TAG = "mytag";
+  bool _isLoading = false;
+  bool _isDownloading = false;
 
   @override
   void dispose() {
     _healthCalls.dispose();
     super.dispose();
   }
-
-  late InAppWebViewController _webViewController;
-  String TAG = "mytag";
-  bool _isLoading = false;
-  bool _isDownloading = false;
 
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
@@ -77,7 +76,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
         geolocationEnabled: true,
         allowFileAccess: true,
       ),
-      ios: IOSInAppWebViewOptions(allowsInlineMediaPlayback: true),
+      ios: IOSInAppWebViewOptions(
+        allowsInlineMediaPlayback: true,
+      ),
     );
 
     return ColoredSafeArea(
@@ -90,7 +91,9 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
               backgroundColor: Colors.white,
               body: InAppWebView(
                 initialOptions: options,
-                initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
+                initialUrlRequest: URLRequest(
+                  url: WebUri(widget.initialUrl),
+                ),
                 onWebViewCreated: (InAppWebViewController controller) {
                   _webViewController = controller;
 
@@ -101,9 +104,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                       try {
                         String jsonString = args[0];
 
-                        Map<String, dynamic> callbackResponse = jsonDecode(
-                          jsonString,
-                        );
+                        Map<String, dynamic> callbackResponse =
+                            jsonDecode(jsonString);
 
                         if (widget.isLoggingEnabled) {
                           print("$TAG: callbackResponse: $callbackResponse");
@@ -114,8 +116,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                         if (methodName == "GET_LOCATION_PERMISSIONS") {
                           _checkForLocationAndGPSPermission();
                         } else if (methodName == "DOWNLOAD_PDF") {
-                          final String? documentLink = callbackResponse['link']
-                              ?.toString();
+                          final String? documentLink =
+                              callbackResponse['link']?.toString();
                           final String? authToken =
                               callbackResponse['authToken']?.toString();
 
@@ -134,15 +136,28 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                           int? phone = callbackResponse['number'];
                           _makePhoneCall(phone!);
                         } else if (methodName == "GET_HEALTH_CONNECT_STATUS") {
-                          _getHealthConnectStatus();
+                          _healthCalls.run('status', _getHealthConnectStatus);
                         } else if (methodName == "CONNECT_TO_GOOGLE_FIT") {
-                          _askForHealthConnectPermission();
+                          _healthCalls.run(
+                            'permission', _askForHealthConnectPermission,
+                          );
                         } else if (methodName == "UPDATE_PLATFORM") {
-                          _updatePlatform();
+                          _healthCalls.run('platform', _updatePlatform);
                         } else if (methodName == "UPDATE_API_BASE_URL") {
                           _updateApiBaseUrl(callbackResponse);
                         } else if (methodName == "GET_DATA_TO_GENERATE_GRAPH") {
-                          _getDataToGenerateDetailedGraph(callbackResponse);
+                          final timestamp = int.tryParse(
+                            callbackResponse['timestamp'].toString(),
+                          );
+                          final key = (
+                            'graph', callbackResponse['type'],
+                            callbackResponse['frequency'], timestamp,
+                          );
+                          _healthCalls.run(key, (document) {
+                            return _getDataToGenerateDetailedGraph(
+                              callbackResponse, timestamp, document,
+                            );
+                          });
                         }
                       } catch (e) {
                         print("$TAG: args: $e");
@@ -162,7 +177,10 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                     // _isLoading = false;
                   });
                 },
-                androidOnGeolocationPermissionsShowPrompt: (controller, origin) async {
+                androidOnGeolocationPermissionsShowPrompt: (
+                  controller,
+                  origin,
+                ) async {
                   // Ask runtime permission first (using permission_handler)
                   var status = await Permission.locationWhenInUse.status;
                   if (!status.isGranted) {
@@ -186,12 +204,13 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
           ),
           if (_isLoading)
             const Center(
-              child: Align(
-                alignment: Alignment(0.0, 0.7),
-                // Align at 0.8 part of the screen height
-                child: CircularProgressIndicator(color: Color(0xFFEC6625)),
+                child: Align(
+              alignment: Alignment(0.0, 0.7),
+              // Align at 0.8 part of the screen height
+              child: CircularProgressIndicator(
+                color: Color(0xFFEC6625),
               ),
-            ),
+            )),
         ],
       ),
     );
@@ -206,131 +225,134 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     }
   }
 
-  Future<void> _healthCall(Object key, Future<void> Function(int) action) =>
-      _healthCalls.run(key, (document) async {
-        try {
-          await action(document);
-        } on PlatformException catch (error) {
-          if (!_currentHealthDocument(document)) return;
-          try {
-            if (error.code == 'permission_denied') {
-              await _notifyPermissionDenied(document);
-            } else if (error.code == 'health_connect_unavailable') {
-              await _showHealthStatus(error.details?.toString(), document);
-            } else if (widget.isLoggingEnabled) {
-              debugPrint('Health Connect: ${error.code}');
-            }
-          } catch (error) {
-            if (widget.isLoggingEnabled)
-              debugPrint('Health Connect UI: $error');
-          }
-        } catch (error) {
-          if (widget.isLoggingEnabled) debugPrint('Health Connect: $error');
-        }
-      });
+  Future<void> _getHealthConnectStatus(int document) async {
+    try {
+      final healthConnectStatus = await platform.invokeMethod<String>(
+        'getHealthConnectStatus',
+      );
+      if (!_currentHealthDocument(document)) return;
 
-  Future<void> _getHealthConnectStatus() =>
-      _healthCall('status', (document) async {
-        final status = await platform.invokeMethod<String>(
-          'getHealthConnectStatus',
-        );
-        if (!_currentHealthDocument(document)) return;
-        if (status == 'CONNECTED') {
-          await _getDailyFitnessData();
-        } else {
-          await _showHealthStatus(status, document);
-        }
-      });
+      if (healthConnectStatus == 'CONNECTED') {
+        await _getDailyFitnessData(document);
+      } else {
+        await _showHealthStatus(healthConnectStatus, document);
+      }
+    } on PlatformException catch (e) {
+      await _handleHealthError(e, document);
+    }
+  }
 
   Future<void> _showHealthStatus(String? status, int document) async {
-    final function = switch (status) {
-      'NOT_INSTALLED' => 'healthConnectNotInstall',
-      'INSTALLED' => 'healthConnectAvailable',
-      _ => 'healthConnectNotSupported',
-    };
-    await _evaluateHealthJs('window.$function()', document);
-    await _evaluateHealthJs(
-      'window.updateFitnessPermissions(false,0,0)',
-      document,
-    );
-  }
-
-  Future<void> _getDailyFitnessData() => _healthCall('dashboard', (
-    document,
-  ) async {
-    final data = await platform.invokeMethod<String>('requestDailyFitnessData');
-    if (data != null) await _evaluateHealthJs(data, document);
-  });
-
-  Future<void> _askForHealthConnectPermission() =>
-      _healthCall('permission', (document) async {
-        final permission = await platform.invokeMethod<String>(
-          'askForFitnessPermission',
-        );
-        if (!_currentHealthDocument(document)) return;
-        if (permission == 'GRANTED') {
-          await _getHealthConnectStatus();
-        } else if (permission == 'CANCELLED') {
-          await _notifyPermissionDenied(document);
-        }
-      });
-
-  Future<void> _notifyPermissionDenied(int document) =>
-      _healthCalls.run('permissionDialog', (_) async {
-        await _evaluateHealthJs(
-          'window.updateFitnessPermissions(false,0,0)',
-          document,
-        );
-        if (_currentHealthDocument(document)) {
-          await _showHealthConnectPermissionDeniedDialog();
-        }
-      });
-
-  Future<void> _openHealthConnectSettings() =>
-      _healthCall('settings', (_) async {
-        await platform.invokeMethod<void>('openHealthConnectApp');
-      });
-
-  Future<void> _updatePlatform() => _healthCall('platform', (document) async {
-    await _evaluateHealthJs('window.setSdkPlatform("ANDROID")', document);
-  });
-
-  Future<void> _updateApiBaseUrl(Map<String, dynamic> response) => _healthCall(
-    (
-      'sync',
-      response['apiBaseUrl'],
-      response['authtoken'],
-      response['googleFitLastSync'],
-      response['gfHourlyLastSync'],
-    ),
-    (_) async {
-      await platform.invokeMethod<String>('updateApiBaseUrl', {
-        'apiBaseUrl': response['apiBaseUrl'],
-        'authtoken': response['authtoken'],
-        'googleFitLastSync': _healthInteger(response['googleFitLastSync']),
-        'gfHourlyLastSync': _healthInteger(response['gfHourlyLastSync']),
-      });
-    },
-  );
-
-  Future<void> _getDataToGenerateDetailedGraph(Map<String, dynamic> response) {
-    final type = response['type'];
-    final frequency = response['frequency'];
-    final timestamp = _healthInteger(response['timestamp']);
-    return _healthCall(('graph', type, frequency, timestamp), (document) async {
-      final data = await platform.invokeMethod<String>(
-        'requestActivityDataFromHealthConnect',
-        {'type': type, 'frequency': frequency, 'timestamp': timestamp},
+    if (status == 'NOT_SUPPORTED') {
+      await _evaluateHealthJs('window.healthConnectNotSupported()', document);
+    } else if (status == 'NOT_INSTALLED') {
+      await _evaluateHealthJs('window.healthConnectNotInstall()', document);
+      await _evaluateHealthJs(
+        'window.updateFitnessPermissions(false,0,0)', document,
       );
-      if (data != null) await _evaluateHealthJs('window.$data', document);
-    });
+    } else if (status == 'INSTALLED') {
+      await _evaluateHealthJs('window.healthConnectAvailable()', document);
+      await _evaluateHealthJs(
+        'window.updateFitnessPermissions(false,0,0)', document,
+      );
+    }
   }
 
-  int? _healthInteger(dynamic value) => value is int
-      ? value
-      : value is String
-      ? int.tryParse(value)
-      : null;
+  Future<void> _getDailyFitnessData(int document) async {
+    try {
+      final dailyFitnessData = await platform.invokeMethod<String>(
+        'requestDailyFitnessData',
+      );
+      if (dailyFitnessData != null) {
+        await _evaluateHealthJs(dailyFitnessData, document);
+      }
+    } on PlatformException catch (e) {
+      await _handleHealthError(e, document);
+    }
+  }
+
+  Future<void> _askForHealthConnectPermission(int document) async {
+    try {
+      final isPermissionGranted = await platform.invokeMethod<String>(
+        'askForFitnessPermission',
+      );
+      if (!_currentHealthDocument(document)) return;
+
+      if (isPermissionGranted == "GRANTED") {
+        await _healthCalls.run('status', _getHealthConnectStatus);
+      } else if (isPermissionGranted == "CANCELLED") {
+        await _showHealthConnectPermissionDeniedDialog(document);
+      }
+    } on PlatformException catch (e) {
+      await _handleHealthError(e, document);
+    }
+  }
+
+  Future<void> _handleHealthError(PlatformException error, int document) async {
+    if (!_currentHealthDocument(document)) return;
+    if (error.code == 'permission_denied') {
+      await _showHealthConnectPermissionDeniedDialog(document);
+    } else if (error.code == 'health_connect_unavailable') {
+      await _showHealthStatus(error.details?.toString(), document);
+    } else if (widget.isLoggingEnabled) {
+      debugPrint('Health Connect: ${error.code}');
+    }
+  }
+
+  Future<void> _openHealthConnectSettings() async {
+    try {
+      await platform.invokeMethod<void>('openHealthConnectApp');
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        debugPrint("$TAG: Failed to open Health Connect: ${e.code}");
+      }
+    }
+  }
+
+  Future<void> _updatePlatform(int document) async {
+    await _evaluateHealthJs('window.setSdkPlatform("ANDROID")', document);
+  }
+
+  Future<void> _updateApiBaseUrl(Map<String, dynamic> callbackResponse) async {
+    try {
+      await platform.invokeMethod<String>('updateApiBaseUrl', {
+        'apiBaseUrl': callbackResponse['apiBaseUrl'],
+        'authtoken': callbackResponse['authtoken'],
+        'googleFitLastSync': int.tryParse(
+          callbackResponse['googleFitLastSync'].toString(),
+        ),
+        'gfHourlyLastSync': int.tryParse(
+          callbackResponse['gfHourlyLastSync'].toString(),
+        ),
+      });
+    } on PlatformException catch (e) {
+      if (widget.isLoggingEnabled) {
+        debugPrint("$TAG: Failed to configure Health Connect: ${e.code}");
+      }
+    }
+  }
+
+  Future<void> _getDataToGenerateDetailedGraph(
+    Map<String, dynamic> callbackResponse,
+    int? timestamp,
+    int document,
+  ) async {
+    try {
+      final graphData = await platform.invokeMethod<String>(
+        'requestActivityDataFromHealthConnect',
+        {
+          'type': callbackResponse['type'],
+          'frequency': callbackResponse['frequency'],
+          'timestamp': timestamp,
+        },
+      );
+      if (graphData != null) {
+        await _evaluateHealthJs("window.$graphData", document);
+      }
+    } on PlatformException catch (e) {
+      await _handleHealthError(e, document);
+    }
+  }
 
   Map<String, String> _buildHeaders(Uri uri, String? authToken) {
     final token = authToken?.trim();
@@ -468,8 +490,7 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     LocationPermission permission = await Geolocator.checkPermission();
 
     print(
-      '$TAG: checkForLocationAndGPSPermission permissionState : $permission',
-    );
+        '$TAG: checkForLocationAndGPSPermission permissionState : $permission');
 
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
@@ -539,21 +560,27 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
     }
   }
 
-  Future<void> _showHealthConnectPermissionDeniedDialog() async {
-    if (!mounted || _healthDialogVisible) return;
+  Future<void> _showHealthConnectPermissionDeniedDialog(int document) async {
+    if (!_currentHealthDocument(document) || _healthDialogVisible) return;
     _healthDialogVisible = true;
     try {
+      await _evaluateHealthJs(
+        'window.updateFitnessPermissions(false,0,0)', document,
+      );
+      if (!mounted || !_healthCalls.isCurrent(document)) return;
       await showPermissionDialog(
         context,
         titleText: 'Permission Denied',
         descriptionText: 'Go to Health Connect App to allow app permission',
-        positiveCTAText: 'Open Health Connect',
-        negativeCTAText: 'Cancel',
+        positiveCTAText: "Open Health Connect",
+        negativeCTAText: "Cancel",
         onPositiveButtonPress: () {
           Navigator.of(context).pop();
           _openHealthConnectSettings();
         },
-        onNegativeButtonPress: () => Navigator.of(context).pop(),
+        onNegativeButtonPress: () {
+          Navigator.of(context).pop();
+        },
       );
     } finally {
       _healthDialogVisible = false;
