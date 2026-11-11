@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../alert_dialog.dart';
 import '../colored_safe_area_widget.dart';
+import '../src/health_call_guard.dart';
 import '../visit_flutter_sdk_platform_interface.dart';
 
 class VisitIosWebView extends StatefulWidget {
@@ -28,6 +29,7 @@ class VisitIosWebView extends StatefulWidget {
 
 class _VisitIosWebViewState extends State<VisitIosWebView> {
   static const platform = MethodChannel('visit_flutter_sdk');
+  final _calorieCalls = HealthCallGuard();
 
   late InAppWebViewController _webViewController;
   String TAG = "mytag";
@@ -50,6 +52,12 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
       allowsInlineMediaPlayback: true,
     ),
   );
+
+  @override
+  void dispose() {
+    _calorieCalls.dispose();
+    super.dispose();
+  }
 
   Future<bool> _onWillPop() async {
     if (await _webViewController.canGoBack()) {
@@ -134,6 +142,8 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                           _getHealthConnectStatus();
                         } else if (methodName == "CONNECT_TO_GOOGLE_FIT") {
                           _askForHealthConnectPermission();
+                        } else if (methodName == "GET_CALORIE_BURNED") {
+                          _calorieCalls.run('calories', _getTodayCaloriesBurned);
                         } else if (methodName == "UPDATE_PLATFORM") {
                           _updatePlatform();
                         } else if (methodName == "UPDATE_API_BASE_URL") {
@@ -148,6 +158,7 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
                   );
                 },
                 onLoadStart: (controller, url) {
+                  _calorieCalls.newDocument();
                   setState(() {
                     print('Page started loading: $url');
                     // _isLoading = true;
@@ -257,6 +268,18 @@ class _VisitIosWebViewState extends State<VisitIosWebView> {
     } on PlatformException catch (e) {
       if (widget.isLoggingEnabled) {
         print("$TAG: Failed to get daily fitness data on iOS: '${e.message}'.");
+      }
+    }
+  }
+
+  Future<void> _getTodayCaloriesBurned(int document) async {
+    try {
+      final kcal = await platform.invokeMethod<int>('getTodayCaloriesBurned');
+      if (kcal == null || !mounted || !_calorieCalls.isCurrent(document)) return;
+      await _invokeWindowFunction('updateCalorieBurned', [kcal.toString()]);
+    } on PlatformException catch (error) {
+      if (widget.isLoggingEnabled) {
+        debugPrint('Apple Health calorie read failed: ${error.code}');
       }
     }
   }

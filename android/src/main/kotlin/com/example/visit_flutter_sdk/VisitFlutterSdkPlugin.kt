@@ -161,6 +161,15 @@ class VisitFlutterSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     requirePermission(it)
                     it.getDashboardData()
                 }
+                "getTodayCaloriesBurned" -> healthRequest(result) {
+                    if (status(it) == HealthConnectConnectionState.CONNECTED) {
+                        withTimeout(30_000) {
+                            withContext(Dispatchers.IO) { it.getTodayCaloriesBurned() }
+                        }
+                    } else {
+                        null
+                    }
+                }
                 "requestActivityDataFromHealthConnect" -> {
                     val type = requireNotNull(call.argument<String>("type")) { "Missing graph type." }
                     val frequency = requireNotNull(call.argument<String>("frequency")) { "Missing graph frequency." }

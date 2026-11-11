@@ -47,6 +47,8 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
       askForFitnessPermission(result)
     case "requestDailyFitnessData":
       requestDailyFitnessData(result)
+    case "getTodayCaloriesBurned":
+      getTodayCaloriesBurned(result)
     case "requestActivityDataFromHealthConnect":
       requestActivityData(from: call, result: result)
     case "updateApiBaseUrl":
@@ -207,6 +209,19 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
     }
   }
 
+  private func getTodayCaloriesBurned(_ result: @escaping FlutterResult) {
+    guard HKHealthStore.isHealthDataAvailable(), hasHealthAuthorization else {
+      result(nil)
+      return
+    }
+
+    fetchHourlySteps(for: Date()) { _, calories, hasReadableSteps in
+      DispatchQueue.main.async {
+        result(hasReadableSteps ? calories.reduce(0, +) : nil)
+      }
+    }
+  }
+
   private func requestActivityData(from call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard hasHealthAuthorization else {
       result(nil)
@@ -270,7 +285,7 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
     var distance: [Int] = []
 
     group.enter()
-    fetchHourlySteps(for: date) { hourlySteps, hourlyCalories in
+    fetchHourlySteps(for: date) { hourlySteps, hourlyCalories, _ in
       steps = hourlySteps
       calories = hourlyCalories
       group.leave()
@@ -342,7 +357,7 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
           }
         }
       } else if frequency == "day" {
-        fetchHourlySteps(for: date) { steps, hourlyCalories in
+        fetchHourlySteps(for: date) { steps, hourlyCalories, _ in
           stepsOrDistance = steps
           calories = hourlyCalories
           group.leave()
@@ -406,9 +421,12 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
     }
   }
 
-  private func fetchHourlySteps(for date: Date, completion: @escaping ([Int], [Int]) -> Void) {
+  private func fetchHourlySteps(
+    for date: Date,
+    completion: @escaping ([Int], [Int], Bool) -> Void
+  ) {
     guard let stepCountType = stepCountType else {
-      completion([], [])
+      completion([], [], false)
       return
     }
 
@@ -424,23 +442,26 @@ public class VisitFlutterSdkPlugin: NSObject, FlutterPlugin {
       intervalComponents: interval
     )
 
-    query.initialResultsHandler = { [weak self] _, result, _ in
+    query.initialResultsHandler = { [weak self] _, result, error in
       guard let self, let result else {
-        completion([], [])
+        completion([], [], false)
         return
       }
 
       let bmrCaloriesPerHour = self.currentBmrCaloriesPerHour()
       var stepsData: [Int] = []
       var calorieData: [Int] = []
+      var hasReadableSteps = false
 
       result.enumerateStatistics(from: startDate, to: endOfDay) { statistics, _ in
-        let value = Int(statistics.sumQuantity()?.doubleValue(for: HKUnit.count()) ?? 0)
+        let quantity = statistics.sumQuantity()
+        if quantity != nil { hasReadableSteps = true }
+        let value = Int(quantity?.doubleValue(for: HKUnit.count()) ?? 0)
         stepsData.append(value)
         calorieData.append(value == 0 ? 0 : (value / 21) + bmrCaloriesPerHour)
       }
 
-      completion(stepsData, calorieData)
+      completion(stepsData, calorieData, hasReadableSteps && error == nil)
     }
 
     healthStore.execute(query)

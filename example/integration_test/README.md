@@ -27,3 +27,16 @@ connect calls plus dashboard and graph calls while that prompt is pending. All
 four callers must finish after the single permission decision. The remaining
 tests cover duplicate and overlapping native requests, integer timestamps,
 invalid arguments, and duplicate JavaScript events through a local WebView.
+
+## Calories Burnt fixture
+
+Run `fvm flutter test integration_test/calorie_bridge_integration_test.dart -d <device>`
+from the example directory on Android or iOS. The fixture drives the real
+WebView and supplies controlled replies for duplicate, empty, denied, zero,
+and stale requests.
+
+Add `--dart-define=VISIT_TEST_CALORIE_PROVIDER=true` to also link the device
+through the existing permission flow and compare the card with today's graph
+using readable health data. Add `--dart-define=VISIT_TEST_CALORIE_EMPTY=true`
+on a connected device without today's records to check that the card receives
+no update.

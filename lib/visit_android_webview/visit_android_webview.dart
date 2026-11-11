@@ -141,6 +141,8 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
                           _healthCalls.run(
                             'permission', _askForHealthConnectPermission,
                           );
+                        } else if (methodName == "GET_CALORIE_BURNED") {
+                          _healthCalls.run('calories', _getTodayCaloriesBurned);
                         } else if (methodName == "UPDATE_PLATFORM") {
                           _healthCalls.run('platform', _updatePlatform);
                         } else if (methodName == "UPDATE_API_BASE_URL") {
@@ -268,6 +270,22 @@ class _VisitAndroidWebViewState extends State<VisitAndroidWebView> {
       }
     } on PlatformException catch (e) {
       await _handleHealthError(e, document);
+    }
+  }
+
+  Future<void> _getTodayCaloriesBurned(int document) async {
+    try {
+      final kcal = await platform.invokeMethod<int>('getTodayCaloriesBurned');
+      if (kcal == null) return;
+      await _evaluateHealthJs(
+        "if (typeof window.updateCalorieBurned === 'function') "
+        'window.updateCalorieBurned($kcal);',
+        document,
+      );
+    } on PlatformException catch (error) {
+      if (widget.isLoggingEnabled) {
+        debugPrint('Health Connect calorie read failed: ${error.code}');
+      }
     }
   }
 
