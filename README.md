@@ -1,6 +1,6 @@
 # Visit Flutter Plugin
 
-### Version 2.0.11
+### Version 2.0.12
 
 A Flutter plugin that provides WebView access with permissions for location, file read/write, and more.
 
@@ -16,7 +16,7 @@ Add the following dependency in your `pubspec.yaml` file:
 dependencies:
   flutter:
     sdk: flutter
-  visit_flutter_sdk: ^2.0.11
+  visit_flutter_sdk: ^2.0.12
 ```
 
 ### iOS Setup

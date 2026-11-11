@@ -1,3 +1,7 @@
+## 2.0.12
+- Show today's Calories Burnt on Android and iOS using the values from the daily graph.
+- Use Visit Android SDK `v3.4.3` for Health Connect calorie reads.
+
 ## 2.0.11
 - Prevent duplicate Android Health Connect callbacks from issuing repeated JavaScript updates.
 - Resolve overlapping dashboard and graph requests independently with Visit Android SDK `v3.4.1`.
